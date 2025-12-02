@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import Providers from "../../providers";
 
 export const metadata: Metadata = {
   title: "Privora - Private Programmable Philanthropy",
-  description: "Matching anonymous donors with verified-but-pseudonymous builders using Zcash, NEAR, and zk-proofs",
+  description:
+    "Matching anonymous donors with verified-but-pseudonymous builders using Zcash, NEAR, and zk-proofs",
   manifest: "/manifest.json",
 };
 
@@ -26,7 +28,9 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icon-192x192.svg" />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
