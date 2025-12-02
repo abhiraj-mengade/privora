@@ -1,0 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Matrix Green Palette */
+  --matrix-green-primary: #00ff41;
+  --matrix-green-light: #39ff14;
+  --matrix-green-dark: #00cc33;
+  --matrix-green-glow: rgba(0, 255, 65, 0.5);
+  --matrix-green-subtle: rgba(0, 255, 65, 0.1);
+  
+  /* Background Colors */
+  --bg-black: #000000;
+  --bg-dark: #0a0a0a;
+  --bg-darker: #050505;
+  --bg-card: rgba(0, 20, 10, 0.6);
+  --bg-card-hover: rgba(0, 30, 15, 0.8);
+  
+  /* Text Colors */
+  --text-primary: #00ff41;
+  --text-secondary: #00cc33;
+  --text-muted: #006622;
+  --text-white: #e0e0e0;
+  
+  /* Border Colors */
+  --border-primary: #00ff41;
+  --border-subtle: rgba(0, 255, 65, 0.2);
+  
+  /* Shadows */
+  --shadow-glow: 0 0 20px var(--matrix-green-glow);
+  --shadow-glow-strong: 0 0 40px var(--matrix-green-glow);
+  --shadow-card: 0 8px 32px 0 rgba(0, 255, 65, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--bg-black);
+  color: var(--text-white);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animated Matrix Background */
+.matrix-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(180deg, #000000 0%, #001a0d 100%);
+  overflow: hidden;
+}
+
+.matrix-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(90deg, transparent 0%, rgba(0, 255, 65, 0.03) 50%, transparent 100%),
+    linear-gradient(0deg, transparent 0%, rgba(0, 255, 65, 0.03) 50%, transparent 100%);
+  background-size: 50px 50px;
+  animation: matrixScan 20s linear infinite;
+}
+
+@keyframes matrixScan {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 50px 50px;
+  }
+}
+
+/* Glass Card Effect */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-primary);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+/* Glowing Text Effect */
+.glow-text {
+  color: var(--text-primary);
+  text-shadow: 0 0 10px var(--matrix-green-glow);
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    text-shadow: 0 0 10px var(--matrix-green-glow);
+  }
+  50% {
+    text-shadow: 0 0 20px var(--matrix-green-glow), 0 0 30px var(--matrix-green-glow);
+  }
+}
+
+/* Button Styles */
+.btn-primary {
+  background: linear-gradient(135deg, var(--matrix-green-dark), var(--matrix-green-primary));
+  color: var(--bg-black);
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-glow);
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow-strong);
+  background: linear-gradient(135deg, var(--matrix-green-primary), var(--matrix-green-light));
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-primary);
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: 2px solid var(--border-primary);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-outline:hover {
+  background: var(--matrix-green-subtle);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+/* Input Styles */
+.input-field {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--text-white);
+  font-family: 'Space Grotesk', sans-serif;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--border-primary);
+  box-shadow: 0 0 0 3px var(--matrix-green-subtle);
+  background: var(--bg-card-hover);
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+/* Code/Mono Text */
+.mono-text {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  letter-spacing: -0.5px;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-darker);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--matrix-green-dark);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--matrix-green-primary);
+}
+
+/* Selection */
+::selection {
+  background: var(--matrix-green-primary);
+  color: var(--bg-black);
+}
+
+/* Fade In Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Utility Classes */
+.section-padding {
+  padding: 80px 24px;
+}
+
+@media (min-width: 768px) {
+  .section-padding {
+    padding: 120px 40px;
+  }
+}
+
+.container-max {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Matrix Rain Effect Container */
+.matrix-rain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.15;
+}
