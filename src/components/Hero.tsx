@@ -5,20 +5,23 @@ import Link from 'next/link';
 
 export default function Hero() {
     return (
-        <section className="relative min-h-screen flex items-center justify-center section-padding">
+        <section className="relative min-h-screen flex items-center section-padding">
             <div className="container-max">
-                <div className="max-w-4xl mx-auto text-center">
+                <div className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-center">
                     {/* Main Heading */}
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
+                        transition={{ duration: 0.8, delay: 0.1 }}
                     >
-                        <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                            <span className="glow-text">Private</span>,{' '}
-                            <span className="glow-text">Programmable</span>
-                            <br />
-                            <span className="text-white">Philanthropy</span>
+                        <p className="text-xs uppercase tracking-[0.3em] text-matrix-green-primary/70 mb-4">
+                            Zcash × NEAR × Zero-Knowledge
+                        </p>
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-semibold md:font-bold mb-6 leading-tight tracking-tight">
+                            <span className="glow-text">Private</span>{' '}
+                            <span className="text-white/90">capital for</span>{' '}
+                            <span className="glow-text">public</span>{' '}
+                            <span className="text-white">impact.</span>
                         </h1>
                     </motion.div>
 
@@ -26,93 +29,85 @@ export default function Hero() {
                     <motion.p
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.4 }}
-                        className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed"
+                        transition={{ duration: 0.8, delay: 0.25 }}
+                        className="text-base md:text-lg text-gray-300 mb-8 leading-relaxed max-w-xl"
                     >
-                        Matching anonymous donors with verified-but-pseudonymous builders,
-                        students, and activists using{' '}
-                        <span className="text-matrix-green-primary font-semibold">
-                            Zcash
-                        </span>
-                        ,{' '}
-                        <span className="text-matrix-green-primary font-semibold">NEAR</span>
-                        , and{' '}
+                        Matching anonymous donors with verified-but-pseudonymous builders, students,
+                        and activists. Funds move through shielded Zcash addresses, coordination
+                        lives on NEAR, guarantees come from{' '}
                         <span className="text-matrix-green-primary font-semibold">
                             zk-proofs
                         </span>
-                        .
+                        —identity never leaves the dark.
                     </motion.p>
-
-                    {/* Key Features */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.6 }}
-                        className="grid md:grid-cols-3 gap-6 mb-12"
-                    >
-                        {[
-                            {
-                                icon: '🔒',
-                                title: 'Maximum Privacy',
-                                desc: 'Shielded transactions via Zcash',
-                            },
-                            {
-                                icon: '✨',
-                                title: 'Verified Impact',
-                                desc: 'zk-proofs for authentic recipients',
-                            },
-                            {
-                                icon: '🌐',
-                                title: 'Global Reach',
-                                desc: 'Support builders anywhere, safely',
-                            },
-                        ].map((feature, idx) => (
-                            <div key={idx} className="glass-card p-6 text-left">
-                                <div className="text-4xl mb-3">{feature.icon}</div>
-                                <h3 className="text-matrix-green-primary font-semibold text-lg mb-2">
-                                    {feature.title}
-                                </h3>
-                                <p className="text-gray-400 text-sm">{feature.desc}</p>
-                            </div>
-                        ))}
-                    </motion.div>
 
                     {/* CTA Buttons */}
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.8 }}
-                        className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+                        transition={{ duration: 0.8, delay: 0.4 }}
+                        className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center"
                     >
                         <Link href="/donor" className="w-full sm:w-auto">
-                            <button className="btn-primary w-full sm:w-auto">
-                                Start Giving
+                            <button className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2">
+                                Start giving
+                                <span className="text-xs font-mono text-black/70">ZEC → SBT</span>
                             </button>
                         </Link>
                         <Link href="/recipient" className="w-full sm:w-auto">
                             <button className="btn-outline w-full sm:w-auto">
-                                Apply as Recipient
+                                Apply as recipient
                             </button>
                         </Link>
                     </motion.div>
 
-                    {/* Trust Indicators */}
+                    {/* Right rail: system snapshot */}
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.8, delay: 1 }}
-                        className="mt-16 pt-8 border-t border-matrix-green-primary/20"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.5 }}
+                        className="glass-card border border-matrix-green-primary/30 p-5 md:p-6 lg:p-7 relative overflow-hidden"
                     >
-                        <p className="text-sm text-gray-500 mb-4">Powered by</p>
-                        <div className="flex flex-wrap justify-center items-center gap-8">
-                            {['Zcash', 'NEAR Protocol', 'zk-SNARKs'].map((tech, idx) => (
-                                <div
-                                    key={idx}
-                                    className="font-mono text-matrix-green-primary/60 text-sm"
-                                >
-                                    {tech}
-                                </div>
-                            ))}
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-matrix opacity-10 mix-blend-soft-light" />
+
+                        <p className="text-xs font-mono text-matrix-green-primary/70 mb-3">
+                            LIVE COORDINATION LAYER
+                        </p>
+
+                        <div className="space-y-3 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-400">Donor intents</span>
+                                <span className="rounded-full bg-black/70 px-3 py-1 font-mono text-xs text-matrix-green-primary border border-matrix-green-primary/30">
+                                    private
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-400">Recipient proofs</span>
+                                <span className="text-xs font-mono text-matrix-green-primary/80">
+                                    zk-SNARKs, Semaphore
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-400">Settlement</span>
+                                <span className="text-xs font-mono text-matrix-green-primary/80">
+                                    ZEC shielded
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 pt-5 border-t border-matrix-green-primary/20">
+                            <p className="text-xs text-gray-500 mb-2">Powered by</p>
+                            <div className="flex flex-wrap gap-3 text-[11px] font-mono text-matrix-green-primary/70">
+                                <span className="px-2 py-1 rounded-full bg-black/60 border border-matrix-green-primary/30">
+                                    Zcash
+                                </span>
+                                <span className="px-2 py-1 rounded-full bg-black/60 border border-matrix-green-primary/30">
+                                    NEAR Protocol
+                                </span>
+                                <span className="px-2 py-1 rounded-full bg-black/60 border border-matrix-green-primary/30">
+                                    zk-SNARKs
+                                </span>
+                            </div>
                         </div>
                     </motion.div>
                 </div>
@@ -123,7 +118,7 @@ export default function Hero() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.2, duration: 0.8 }}
-                className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+                className="pointer-events-none absolute bottom-6 left-1/2 transform -translate-x-1/2 hidden sm:block"
             >
                 <div className="animate-bounce">
                     <svg

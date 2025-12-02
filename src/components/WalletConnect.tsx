@@ -1,60 +1,139 @@
 'use client';
 
-import { setupWalletSelector } from '@near-wallet-selector/core';
-import { setupModal } from '@near-wallet-selector/modal-ui';
-import { setupMyNearWallet } from '@near-wallet-selector/my-near-wallet';
-import { setupHereWallet } from '@near-wallet-selector/here-wallet';
-import '@near-wallet-selector/modal-ui/styles.css';
-import { useState, useEffect } from 'react';
-import type { WalletSelector, AccountState } from '@near-wallet-selector/core';
+import { WalletSelector, WalletSelectorUI } from '@hot-labs/near-connect';
+import { useState, useEffect, useRef } from 'react';
 
 export default function WalletConnect() {
-    const [selector, setSelector] = useState<WalletSelector | null>(null);
-    const [modal, setModal] = useState<any>(null);
-    const [accounts, setAccounts] = useState<AccountState[]>([]);
+    const [accountId, setAccountId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const selectorRef = useRef<WalletSelector | null>(null);
+    const uiRef = useRef<WalletSelectorUI | null>(null);
 
     useEffect(() => {
-        const initWallet = async () => {
+        let isMounted = true;
+
+        const initSelector = async () => {
             try {
-                const _selector = await setupWalletSelector({
+                // Initialize the connector (following tutorial pattern)
+                const selector = new WalletSelector({
                     network: 'testnet',
-                    modules: [
-                        setupMyNearWallet(),
-                        setupHereWallet(),
-                    ],
+                    features: {
+                        signMessage: true,
+                        signTransaction: true,
+                        signInWithoutAddKey: true,
+                        signAndSendTransaction: true,
+                        signAndSendTransactions: true,
+                    },
                 });
 
-                const _modal = setupModal(_selector, {
-                    contractId: 'privora.testnet', // Replace with your contract
+                // Wait for manifest to load
+                await selector.whenManifestLoaded;
+
+                if (!isMounted) return;
+
+                selectorRef.current = selector;
+
+                // Initialize UI
+                const ui = new WalletSelectorUI(selector);
+                uiRef.current = ui;
+
+                // Subscribe to sign-in event (following tutorial pattern)
+                selector.on('wallet:signIn', async ({ wallet, accounts, success }) => {
+                    if (success && wallet && isMounted) {
+                        try {
+                            const address = await wallet.getAddress();
+                            console.log(`User signed in: ${address}`);
+                            setAccountId(address);
+                        } catch (error) {
+                            console.error('Failed to get address:', error);
+                        }
+                    }
                 });
 
-                const state = _selector.store.getState();
-                setAccounts(state.accounts);
+                // Subscribe to sign-out event (following tutorial pattern)
+                selector.on('wallet:signOut', () => {
+                    console.log('User signed out');
+                    if (isMounted) {
+                        setAccountId(null);
+                    }
+                });
 
-                setSelector(_selector);
-                setModal(_modal);
+                // Check if already connected
+                try {
+                    const connected = await selector.getConnectedWallet();
+                    if (connected && connected.accounts.length > 0) {
+                        const wallet = await selector.wallet();
+                        if (wallet) {
+                            const address = await wallet.getAddress();
+                            if (isMounted) {
+                                setAccountId(address);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    // Not connected, that's fine
+                }
+
+                if (isMounted) {
+                    setLoading(false);
+                }
+
+                // Cleanup
+                return () => {
+                    isMounted = false;
+                    selector.off('wallet:signIn');
+                    selector.off('wallet:signOut');
+                };
             } catch (error) {
-                console.error('Failed to initialize wallet:', error);
-            } finally {
-                setLoading(false);
+                console.error('Failed to initialize wallet selector:', error);
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         };
 
-        initWallet();
+        initSelector();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
-    const handleConnectWallet = () => {
-        modal?.show();
+    // Connect function to open modal (following tutorial pattern)
+    const handleConnectWallet = async () => {
+        try {
+            const selector = selectorRef.current;
+            const ui = uiRef.current;
+
+            if (!selector || !ui) {
+                console.error('Wallet selector not initialized');
+                return;
+            }
+
+            // Ensure manifest is loaded
+            await selector.whenManifestLoaded;
+
+            // Open the wallet selector UI
+            ui.open();
+        } catch (error) {
+            console.error('Failed to show wallet selector:', error);
+        }
     };
 
+    // Disconnect function (following tutorial pattern)
     const handleDisconnect = async () => {
-        const wallet = await selector?.wallet();
-        await wallet?.signOut();
-        setAccounts([]);
+        try {
+            const selector = selectorRef.current;
+            if (selector) {
+                await selector.disconnect();
+                setAccountId(null);
+            }
+        } catch (error) {
+            console.error('Failed to disconnect wallet:', error);
+        }
     };
 
-    const isConnected = accounts.length > 0;
+    const isConnected = !!accountId;
 
     if (loading) {
         return (
@@ -89,7 +168,7 @@ export default function WalletConnect() {
                 <div className="flex items-center gap-4">
                     <div className="glass-card px-4 py-2">
                         <span className="font-mono text-sm text-matrix-green-primary">
-                            {accounts[0].accountId}
+                            {accountId}
                         </span>
                     </div>
                     <button onClick={handleDisconnect} className="btn-outline">

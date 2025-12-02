@@ -10,17 +10,22 @@ export default function AboutPage() {
             <Navbar />
 
             <div className="pt-32 pb-20 section-padding">
-                <div className="container-max max-w-4xl">
+                <div className="container-max max-w-5xl">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-center mb-16"
+                        className="text-center mb-14 md:mb-16"
                     >
-                        <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                            <span className="glow-text">How Privora Works</span>
+                        <p className="text-xs uppercase tracking-[0.3em] text-matrix-green-primary/70 mb-3">
+                            ARCHITECTURE
+                        </p>
+                        <h1 className="text-3xl md:text-5xl font-semibold md:font-bold mb-4">
+                            <span className="glow-text">How Privora works</span>{' '}
+                            <span className="text-white/90">under the hood.</span>
                         </h1>
-                        <p className="text-gray-400 text-lg">
-                            Privacy-first philanthropy powered by cutting-edge cryptography
+                        <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
+                            We separate money flow, coordination, and identity into distinct layers,
+                            each with its own threat model and guarantees.
                         </p>
                     </motion.div>
 
@@ -29,16 +34,19 @@ export default function AboutPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="glass-card p-8 mb-8"
+                        className="glass-card p-7 md:p-8 mb-8 border border-matrix-green-primary/30"
                     >
-                        <h2 className="text-2xl font-bold text-matrix-green-primary mb-6">
-                            System Architecture
+                        <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-6 flex items-center gap-3">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-matrix-green-primary/40 text-xs font-mono">
+                                L1
+                            </span>
+                            System architecture
                         </h2>
 
                         <div className="space-y-6">
-                            <div className="border-l-2 border-matrix-green-primary pl-6">
+                            <div className="border-l-[1.5px] border-matrix-green-primary/60 pl-6">
                                 <h3 className="text-xl font-bold text-matrix-green-light mb-2">
-                                    1. Zcash Payment Layer
+                                    1 · Zcash payment layer
                                 </h3>
                                 <p className="text-gray-400">
                                     All donations flow through Zcash shielded addresses (Z-addresses), ensuring
@@ -47,9 +55,9 @@ export default function AboutPage() {
                                 </p>
                             </div>
 
-                            <div className="border-l-2 border-matrix-green-primary pl-6">
+                            <div className="border-l-[1.5px] border-matrix-green-primary/60 pl-6">
                                 <h3 className="text-xl font-bold text-matrix-green-light mb-2">
-                                    2. NEAR Coordination Layer
+                                    2 · NEAR coordination layer
                                 </h3>
                                 <p className="text-gray-400">
                                     NEAR smart contracts handle donor intents, recipient attestations, and impact
@@ -58,9 +66,9 @@ export default function AboutPage() {
                                 </p>
                             </div>
 
-                            <div className="border-l-2 border-matrix-green-primary pl-6">
+                            <div className="border-l-[1.5px] border-matrix-green-primary/60 pl-6">
                                 <h3 className="text-xl font-bold text-matrix-green-light mb-2">
-                                    3. Zero-Knowledge Proofs
+                                    3 · Zero-knowledge proofs
                                 </h3>
                                 <p className="text-gray-400">
                                     Recipients prove credentials (humanness, location, affiliations) without
@@ -69,9 +77,9 @@ export default function AboutPage() {
                                 </p>
                             </div>
 
-                            <div className="border-l-2 border-matrix-green-primary pl-6">
+                            <div className="border-l-[1.5px] border-matrix-green-primary/60 pl-6">
                                 <h3 className="text-xl font-bold text-matrix-green-light mb-2">
-                                    4. Off-Chain Matching Service
+                                    4 · Off-chain matching service
                                 </h3>
                                 <p className="text-gray-400">
                                     Encrypted profiles are stored off-chain with searchable attributes (skills,
@@ -87,10 +95,13 @@ export default function AboutPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 }}
-                        className="glass-card p-8 mb-8"
+                        className="glass-card p-7 md:p-8 mb-8 border border-matrix-green-primary/30"
                     >
-                        <h2 className="text-2xl font-bold text-matrix-green-primary mb-6">
-                            Privacy Guarantees
+                        <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-6 flex items-center gap-3">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-matrix-green-primary/40 text-xs font-mono">
+                                L2
+                            </span>
+                            Privacy guarantees
                         </h2>
 
                         <div className="grid md:grid-cols-2 gap-6">
@@ -98,15 +109,15 @@ export default function AboutPage() {
                                 <h3 className="font-bold text-matrix-green-light mb-3">For Donors</h3>
                                 <ul className="space-y-2 text-gray-400 text-sm">
                                     <li className="flex items-start gap-2">
-                                        <span className="text-matrix-green-primary">→</span>
+                                        <span className="mt-1 h-4 w-[1px] bg-matrix-green-primary/80" />
                                         <span>Donations are completely anonymous via Zcash shielded transactions</span>
                                     </li>
                                     <li className="flex items-start gap-2">
-                                        <span className="text-matrix-green-primary">→</span>
+                                        <span className="mt-1 h-4 w-[1px] bg-matrix-green-primary/80" />
                                         <span>No link between donor identity and recipient</span>
                                     </li>
                                     <li className="flex items-start gap-2">
-                                        <span className="text-matrix-green-primary">→</span>
+                                        <span className="mt-1 h-4 w-[1px] bg-matrix-green-primary/80" />
                                         <span>Receive non-transferable SBT proving impact without revealing details</span>
                                     </li>
                                 </ul>
@@ -116,15 +127,15 @@ export default function AboutPage() {
                                 <h3 className="font-bold text-matrix-green-light mb-3">For Recipients</h3>
                                 <ul className="space-y-2 text-gray-400 text-sm">
                                     <li className="flex items-start gap-2">
-                                        <span className="text-matrix-green-primary">→</span>
+                                        <span className="mt-1 h-4 w-[1px] bg-matrix-green-primary/80" />
                                         <span>Pseudonymous profiles with encrypted sensitive data</span>
                                     </li>
                                     <li className="flex items-start gap-2">
-                                        <span className="text-matrix-green-primary">→</span>
+                                        <span className="mt-1 h-4 w-[1px] bg-matrix-green-primary/80" />
                                         <span>zk-proofs verify credentials without revealing identity</span>
                                     </li>
                                     <li className="flex items-start gap-2">
-                                        <span className="text-matrix-green-primary">→</span>
+                                        <span className="mt-1 h-4 w-[1px] bg-matrix-green-primary/80" />
                                         <span>Receive funds safely via shielded addresses</span>
                                     </li>
                                 </ul>
@@ -137,10 +148,13 @@ export default function AboutPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6 }}
-                        className="glass-card p-8"
+                        className="glass-card p-7 md:p-8 border border-matrix-green-primary/30"
                     >
-                        <h2 className="text-2xl font-bold text-matrix-green-primary mb-6">
-                            Use Cases
+                        <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-6 flex items-center gap-3">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-matrix-green-primary/40 text-xs font-mono">
+                                L3
+                            </span>
+                            Use cases
                         </h2>
 
                         <div className="space-y-4">

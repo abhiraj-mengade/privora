@@ -91,37 +91,44 @@ export default function DonorPortal() {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-center mb-12"
                     >
-                        <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                            <span className="glow-text">Donor Portal</span>
+                        <p className="text-xs uppercase tracking-[0.3em] text-matrix-green-primary/70 mb-3">
+                            INTERFACE · DONORS
+                        </p>
+                        <h1 className="text-3xl md:text-5xl font-semibold md:font-bold mb-4">
+                            <span className="glow-text">Donor portal</span>{' '}
+                            <span className="text-white/90">for anonymous capital.</span>
                         </h1>
-                        <p className="text-gray-400 text-lg">
-                            Support verified builders and activists with complete privacy
+                        <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
+                            Express where you want your ZEC to land without ever putting your identity
+                            on-chain. Privora handles matching, proofs, and shielded settlement.
                         </p>
                     </motion.div>
 
                     {step === 1 ? (
-                        /* Step 1: Preferences Form */
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="glass-card p-8 md:p-12 max-w-3xl mx-auto"
+                            className="glass-card p-7 md:p-10 max-w-3xl mx-auto border border-matrix-green-primary/30"
                         >
-                            <h2 className="text-2xl font-bold text-matrix-green-primary mb-8">
-                                Set Your Preferences
+                            <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-2">
+                                Set your preferences
                             </h2>
+                            <p className="text-gray-400 text-xs md:text-sm mb-8">
+                                These sliders and tags never hit a public chain—only encrypted signals feed the matcher.
+                            </p>
 
                             {/* Topics */}
                             <div className="mb-8">
-                                <label className="block text-matrix-green-primary font-semibold mb-4">
-                                    Topics of Interest
+                                <label className="block text-matrix-green-primary font-semibold mb-3">
+                                    Topics of interest
                                 </label>
-                                <div className="flex flex-wrap gap-3">
+                                <div className="flex flex-wrap gap-2.5">
                                     {topicOptions.map((topic) => (
                                         <button
                                             key={topic}
                                             onClick={() => toggleTopic(topic)}
-                                            className={`px-4 py-2 rounded-lg font-medium transition-all ${preferences.topics.includes(topic)
+                                            className={`px-3.5 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${preferences.topics.includes(topic)
                                                     ? 'bg-gradient-matrix text-black'
                                                     : 'bg-matrix-green-subtle text-matrix-green-primary border border-matrix-green-primary/30'
                                                 }`}
@@ -134,8 +141,8 @@ export default function DonorPortal() {
 
                             {/* Geography */}
                             <div className="mb-8">
-                                <label className="block text-matrix-green-primary font-semibold mb-4">
-                                    Geographic Focus
+                                <label className="block text-matrix-green-primary font-semibold mb-3">
+                                    Geographic focus
                                 </label>
                                 <select
                                     value={preferences.geography}
@@ -153,8 +160,8 @@ export default function DonorPortal() {
 
                             {/* Funding Amount */}
                             <div className="mb-8">
-                                <label className="block text-matrix-green-primary font-semibold mb-4">
-                                    Funding Amount (ZEC)
+                                <label className="block text-matrix-green-primary font-semibold mb-3">
+                                    Funding amount (ZEC)
                                 </label>
                                 <input
                                     type="number"
@@ -201,8 +208,8 @@ export default function DonorPortal() {
                                 animate={{ opacity: 1 }}
                                 className="mb-8 flex justify-between items-center"
                             >
-                                <h2 className="text-2xl font-bold text-matrix-green-primary">
-                                    Matched Recipients ({matches.length})
+                                <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary">
+                                    Matched recipients ({matches.length})
                                 </h2>
                                 <button onClick={() => setStep(1)} className="btn-outline">
                                     ← Adjust Preferences
@@ -216,7 +223,7 @@ export default function DonorPortal() {
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.1 }}
-                                        className="glass-card p-6 hover:scale-[1.01] transition-transform"
+                                        className="glass-card p-6 hover:scale-[1.01] transition-transform border border-matrix-green-primary/25"
                                     >
                                         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                                             <div className="flex-1">

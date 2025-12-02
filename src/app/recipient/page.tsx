@@ -86,11 +86,16 @@ export default function RecipientPortal() {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-center mb-12"
                     >
-                        <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                            <span className="glow-text">Recipient Portal</span>
+                        <p className="text-xs uppercase tracking-[0.3em] text-matrix-green-primary/70 mb-3">
+                            INTERFACE · RECIPIENTS
+                        </p>
+                        <h1 className="text-3xl md:text-5xl font-semibold md:font-bold mb-4">
+                            <span className="glow-text">Recipient portal</span>{' '}
+                            <span className="text-white/90">for pseudonymous builders.</span>
                         </h1>
-                        <p className="text-gray-400 text-lg">
-                            Create your privacy-preserving profile and get matched with donors
+                        <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
+                            Publish an encrypted, non-doxxing profile; attach zk-proofs for credibility; let donors
+                            discover you without ever learning your real-world identity.
                         </p>
                     </motion.div>
 
@@ -119,23 +124,22 @@ export default function RecipientPortal() {
                     </div>
 
                     {step === 1 && (
-                        /* Step 1: Create Profile */
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="glass-card p-8 md:p-12 max-w-3xl mx-auto"
+                            className="glass-card p-7 md:p-10 max-w-3xl mx-auto border border-matrix-green-primary/30"
                         >
-                            <h2 className="text-2xl font-bold text-matrix-green-primary mb-2">
-                                Create Your Profile
+                            <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-2">
+                                Create your profile
                             </h2>
-                            <p className="text-gray-400 mb-8 text-sm">
-                                All information is encrypted and pseudonymous
+                            <p className="text-gray-400 mb-8 text-xs md:text-sm">
+                                All information is encrypted and pseudonymous—describe your work, not your passport.
                             </p>
 
                             {/* Pseudonym */}
                             <div className="mb-6">
                                 <label className="block text-matrix-green-primary font-semibold mb-3">
-                                    Choose a Pseudonym
+                                    Choose a pseudonym
                                 </label>
                                 <input
                                     type="text"
@@ -168,14 +172,14 @@ export default function RecipientPortal() {
                             {/* Skills */}
                             <div className="mb-6">
                                 <label className="block text-matrix-green-primary font-semibold mb-3">
-                                    Skills & Interests
+                                    Skills & interests
                                 </label>
                                 <div className="flex flex-wrap gap-2">
                                     {skillOptions.map((skill) => (
                                         <button
                                             key={skill}
                                             onClick={() => toggleSkill(skill)}
-                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${profile.skills.includes(skill)
+                                            className={`px-3 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${profile.skills.includes(skill)
                                                     ? 'bg-gradient-matrix text-black'
                                                     : 'bg-matrix-green-subtle text-matrix-green-primary border border-matrix-green-primary/30'
                                                 }`}
@@ -189,7 +193,7 @@ export default function RecipientPortal() {
                             {/* Bio */}
                             <div className="mb-6">
                                 <label className="block text-matrix-green-primary font-semibold mb-3">
-                                    Bio (Non-Identifying)
+                                    Bio (non-identifying)
                                 </label>
                                 <textarea
                                     value={profile.bio}
@@ -202,7 +206,7 @@ export default function RecipientPortal() {
                             {/* Location */}
                             <div className="mb-6">
                                 <label className="block text-matrix-green-primary font-semibold mb-3">
-                                    Location (Coarse)
+                                    Location (coarse)
                                 </label>
                                 <select
                                     value={profile.location}
@@ -220,7 +224,7 @@ export default function RecipientPortal() {
                             {/* Optional Links */}
                             <div className="mb-6">
                                 <label className="block text-matrix-green-primary font-semibold mb-3">
-                                    GitHub (Optional)
+                                    GitHub (optional)
                                 </label>
                                 <input
                                     type="text"
@@ -233,7 +237,7 @@ export default function RecipientPortal() {
 
                             <div className="mb-8">
                                 <label className="block text-matrix-green-primary font-semibold mb-3">
-                                    Portfolio (Optional)
+                                    Portfolio (optional)
                                 </label>
                                 <input
                                     type="text"
@@ -261,17 +265,16 @@ export default function RecipientPortal() {
                     )}
 
                     {step === 2 && (
-                        /* Step 2: zk-Proof Verification */
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="glass-card p-8 md:p-12 max-w-3xl mx-auto"
+                            className="glass-card p-7 md:p-10 max-w-3xl mx-auto border border-matrix-green-primary/30"
                         >
-                            <h2 className="text-2xl font-bold text-matrix-green-primary mb-2">
-                                Submit zk-Proofs
+                            <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-2">
+                                Submit zk-proofs
                             </h2>
-                            <p className="text-gray-400 mb-8 text-sm">
-                                Verify your credentials without revealing your identity
+                            <p className="text-gray-400 mb-8 text-xs md:text-sm">
+                                Verify your credentials without revealing your identity—proofs of membership, not KYC.
                             </p>
 
                             <div className="space-y-6">
