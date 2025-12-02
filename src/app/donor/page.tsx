@@ -1,9 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import MatrixRain from '@/components/MatrixRain';
+import { findMatchingPersonas, type MatchedPersona } from '@/lib/near-ai';
+import { retrieveFromIPFS } from '@/lib/ipfs';
+import { getStoredPersonas } from '@/lib/persona-store';
+import { sendShieldedTransaction, getRecipientShieldedAddress, generateShieldedAddress, formatZEC, checkQuoteStatus, type ZcashTransactionResult } from '@/lib/zcash';
 
 interface DonorPreferences {
     topics: string[];
@@ -21,38 +25,12 @@ export default function DonorPortal() {
         recurring: false,
     });
 
-    const [matches, setMatches] = useState([
-        {
-            id: 1,
-            pseudonym: 'Builder_0x7f3a',
-            category: 'Privacy Tools Developer',
-            location: 'Global',
-            skills: ['Zcash', 'Zero-Knowledge Proofs', 'Rust'],
-            bio: 'Building privacy-preserving infrastructure for the next generation of decentralized applications.',
-            verified: true,
-            nsResident: true,
-        },
-        {
-            id: 2,
-            pseudonym: 'Activist_0x2b9c',
-            category: 'Human Rights Advocate',
-            location: 'High-Risk Region',
-            skills: ['Privacy Tech', 'Community Organizing', 'Education'],
-            bio: 'Working to protect digital rights and privacy in authoritarian regions.',
-            verified: true,
-            nsResident: false,
-        },
-        {
-            id: 3,
-            pseudonym: 'Scholar_0x4e1d',
-            category: 'Privacy Research Student',
-            location: 'Academic Institution',
-            skills: ['Cryptography', 'ZK-SNARKs', 'Protocol Design'],
-            bio: 'Researching scalable zero-knowledge proof systems for real-world applications.',
-            verified: true,
-            nsResident: true,
-        },
-    ]);
+    const [matches, setMatches] = useState<MatchedPersona[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [sendingDonation, setSendingDonation] = useState<string | null>(null);
+    const [donorZAddress, setDonorZAddress] = useState<string | null>(null);
+    const [quoteResults, setQuoteResults] = useState<Record<string, ZcashTransactionResult>>({});
 
     const topicOptions = [
         'Zero-Knowledge Proofs',
@@ -73,8 +51,126 @@ export default function DonorPortal() {
         }));
     };
 
-    const handleFindMatches = () => {
-        setStep(2);
+    // Generate donor's shielded address on mount (optional, for refunds)
+    useEffect(() => {
+        generateShieldedAddress().then(setDonorZAddress).catch(console.error);
+    }, []);
+
+    const handleFindMatches = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            // Step 1: Load all available personas from storage
+            const storedPersonas = getStoredPersonas();
+
+            if (storedPersonas.length === 0) {
+                setError('No recipients available yet. Please wait for recipients to register.');
+                setLoading(false);
+                return;
+            }
+
+            // Step 2: Retrieve persona data from IPFS
+            const personasWithData = await Promise.all(
+                storedPersonas.map(async (stored) => {
+                    try {
+                        const profile = await retrieveFromIPFS(stored.ipfsHash);
+                        return {
+                            ipfsHash: stored.ipfsHash,
+                            profile: profile as any,
+                        };
+                    } catch (err) {
+                        console.error(`Failed to load persona ${stored.ipfsHash}:`, err);
+                        return null;
+                    }
+                })
+            );
+
+            const validPersonas = personasWithData.filter((p) => p !== null) as Array<{
+                ipfsHash: string;
+                profile: any;
+            }>;
+
+            if (validPersonas.length === 0) {
+                setError('Failed to load recipient profiles. Please try again later.');
+                setLoading(false);
+                return;
+            }
+
+            // Step 3: Use AI to find matches (Agentic Wallet)
+            const matched = await findMatchingPersonas(preferences, validPersonas);
+
+            setMatches(matched);
+            setStep(2);
+        } catch (err) {
+            console.error('Error finding matches:', err);
+            setError(err instanceof Error ? err.message : 'Failed to find matches');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSendDonation = async (match: MatchedPersona) => {
+        setSendingDonation(match.ipfsHash);
+        setError(null);
+
+        try {
+            // Get recipient's shielded address
+            const recipientZAddress = await getRecipientShieldedAddress(match.ipfsHash);
+
+            // Get quote from NEAR Intents 1Click API
+            const amount = parseFloat(preferences.amount);
+            if (isNaN(amount) || amount <= 0) {
+                throw new Error('Invalid donation amount');
+            }
+
+            const result = await sendShieldedTransaction({
+                toAddress: recipientZAddress,
+                amount,
+                memo: `Donation to ${match.pseudonym} via Privora`,
+                refundTo: donorZAddress || undefined,
+            });
+
+            // Store quote result to show deposit address
+            setQuoteResults((prev) => ({
+                ...prev,
+                [match.ipfsHash]: result,
+            }));
+        } catch (err) {
+            console.error('Error getting donation quote:', err);
+            setError(err instanceof Error ? err.message : 'Failed to get donation quote');
+            setSendingDonation(null);
+        }
+    };
+
+    const handleCheckQuoteStatus = async (match: MatchedPersona) => {
+        const quote = quoteResults[match.ipfsHash];
+        if (!quote) return;
+
+        try {
+            const status = await checkQuoteStatus(quote.quoteId);
+            
+            setQuoteResults((prev) => ({
+                ...prev,
+                [match.ipfsHash]: status,
+            }));
+            
+            if (status.status === 'fulfilled') {
+                alert(
+                    `Donation completed successfully!\n\nTransaction ID: ${status.txId}\nAmount: ${formatZEC(parseFloat(preferences.amount))}\nRecipient: ${match.pseudonym}\n\nYour donation has been processed on the Zcash network.`
+                );
+                // Remove quote from display
+                setQuoteResults((prev) => {
+                    const updated = { ...prev };
+                    delete updated[match.ipfsHash];
+                    return updated;
+                });
+                setSendingDonation(null);
+            }
+        } catch (err) {
+            console.error('Error checking quote status:', err);
+            setError(err instanceof Error ? err.message : 'Failed to check status');
+        }
     };
 
     return (
@@ -192,12 +288,24 @@ export default function DonorPortal() {
                             </div>
 
                             {/* Submit */}
+                            {error && (
+                                <div className="mb-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+                                    <p className="text-red-400 text-sm">{error}</p>
+                                </div>
+                            )}
                             <button
                                 onClick={handleFindMatches}
-                                disabled={preferences.topics.length === 0 || !preferences.amount}
+                                disabled={preferences.topics.length === 0 || !preferences.amount || loading}
                                 className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Find Matched Recipients
+                                {loading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="animate-spin">⟳</span>
+                                        Finding matches with AI...
+                                    </span>
+                                ) : (
+                                    'Find Matched Recipients'
+                                )}
                             </button>
                         </motion.div>
                     ) : (
@@ -216,10 +324,24 @@ export default function DonorPortal() {
                                 </button>
                             </motion.div>
 
+                            {error && (
+                                <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+                                    <p className="text-red-400 text-sm">{error}</p>
+                                </div>
+                            )}
+
+                            {matches.length === 0 && !loading && (
+                                <div className="glass-card p-8 text-center border border-matrix-green-primary/30">
+                                    <p className="text-gray-400">
+                                        No matches found. Try adjusting your preferences.
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="grid gap-6">
                                 {matches.map((match, idx) => (
                                     <motion.div
-                                        key={match.id}
+                                        key={match.ipfsHash}
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.1 }}
@@ -231,17 +353,24 @@ export default function DonorPortal() {
                                                     <h3 className="text-xl font-bold font-mono text-matrix-green-primary">
                                                         {match.pseudonym}
                                                     </h3>
-                                                    {match.verified && (
+                                                    {match.verificationFlags.humanness && (
                                                         <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30">
                                                             Verified
                                                         </span>
                                                     )}
-                                                    {match.nsResident && (
+                                                    {match.verificationFlags.nsResident && (
                                                         <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30 font-mono">
                                                             NS
                                                         </span>
                                                     )}
+                                                    <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30">
+                                                        {match.matchScore}% match
+                                                    </span>
                                                 </div>
+
+                                                <p className="text-gray-400 mb-2 text-sm italic">
+                                                    {match.matchReason}
+                                                </p>
 
                                                 <p className="text-gray-400 mb-3">{match.bio}</p>
 
@@ -263,12 +392,74 @@ export default function DonorPortal() {
                                             </div>
 
                                             <div className="flex md:flex-col gap-3">
-                                                <button className="btn-primary text-sm px-6">
-                                                    Send Donation
-                                                </button>
-                                                <button className="btn-outline text-sm px-6">
-                                                    View Details
-                                                </button>
+                                                {quoteResults[match.ipfsHash] ? (
+                                                    <div className="space-y-3">
+                                                        <div className="glass-card p-4 border border-matrix-green-primary/30">
+                                                            <h4 className="text-sm font-bold text-matrix-green-primary mb-2">
+                                                                Send ZEC to Deposit Address
+                                                            </h4>
+                                                            <p className="text-xs text-gray-400 mb-3">
+                                                                Send {formatZEC(parseFloat(preferences.amount))} to the address below. NEAR Intents will complete the transaction to {match.pseudonym}.
+                                                            </p>
+                                                            <div className="bg-black/50 p-3 rounded border border-matrix-green-primary/20 mb-3">
+                                                                <p className="text-xs text-gray-500 mb-1">Deposit Address:</p>
+                                                                <p className="text-matrix-green-primary font-mono text-xs break-all">
+                                                                    {quoteResults[match.ipfsHash].depositAddress}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        navigator.clipboard.writeText(quoteResults[match.ipfsHash].depositAddress);
+                                                                        alert('Deposit address copied to clipboard!');
+                                                                    }}
+                                                                    className="btn-outline text-xs px-4 py-2 flex-1"
+                                                                >
+                                                                    Copy Address
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleCheckQuoteStatus(match)}
+                                                                    className="btn-primary text-xs px-4 py-2 flex-1"
+                                                                >
+                                                                    Check Status
+                                                                </button>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setQuoteResults((prev) => {
+                                                                        const updated = { ...prev };
+                                                                        delete updated[match.ipfsHash];
+                                                                        return updated;
+                                                                    });
+                                                                    setSendingDonation(null);
+                                                                }}
+                                                                className="btn-outline text-xs w-full mt-2"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleSendDonation(match)}
+                                                            disabled={sendingDonation === match.ipfsHash}
+                                                            className="btn-primary text-sm px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {sendingDonation === match.ipfsHash ? (
+                                                                <span className="flex items-center gap-2">
+                                                                    <span className="animate-spin">⟳</span>
+                                                                    Getting quote...
+                                                                </span>
+                                                            ) : (
+                                                                `Send ${formatZEC(parseFloat(preferences.amount))}`
+                                                            )}
+                                                        </button>
+                                                        <button className="btn-outline text-sm px-6">
+                                                            View Details
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     </motion.div>

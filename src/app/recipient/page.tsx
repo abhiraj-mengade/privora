@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import MatrixRain from '@/components/MatrixRain';
+import { stripPII } from '@/lib/near-ai';
+import { uploadToIPFS } from '@/lib/ipfs';
+import { storePersona } from '@/lib/persona-store';
 
 interface RecipientProfile {
     pseudonym: string;
@@ -68,8 +71,45 @@ export default function RecipientPortal() {
         setStep(2);
     };
 
-    const handleSubmitProofs = () => {
-        setStep(3);
+    const [processing, setProcessing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [ipfsHash, setIpfsHash] = useState<string | null>(null);
+    const [ipfsUrl, setIpfsUrl] = useState<string | null>(null);
+
+    const handleSubmitProofs = async () => {
+        setProcessing(true);
+        setError(null);
+
+        try {
+            // Step 1: Strip PII using NEAR AI Cloud (Data Incinerator)
+            const rawProfile = {
+                pseudonym: profile.pseudonym,
+                category: profile.category,
+                skills: profile.skills,
+                bio: profile.bio,
+                location: profile.location,
+                github: profile.github || undefined,
+                portfolio: profile.portfolio || undefined,
+                verificationFlags: zkProofs,
+            };
+
+            const strippedProfile = await stripPII(rawProfile);
+
+            // Step 2: Upload to IPFS
+            const ipfsResult = await uploadToIPFS(strippedProfile);
+
+            // Step 3: Store locally
+            storePersona(ipfsResult.ipfsHash, ipfsResult.ipfsUrl);
+
+            setIpfsHash(ipfsResult.ipfsHash);
+            setIpfsUrl(ipfsResult.ipfsUrl);
+            setStep(3);
+        } catch (err) {
+            console.error('Error processing profile:', err);
+            setError(err instanceof Error ? err.message : 'Failed to process profile');
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
@@ -363,16 +403,33 @@ export default function RecipientPortal() {
                                 </div>
                             </div>
 
+                            {error && (
+                                <div className="mb-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+                                    <p className="text-red-400 text-sm">{error}</p>
+                                </div>
+                            )}
+
                             <div className="flex gap-4 mt-8">
-                                <button onClick={() => setStep(1)} className="btn-outline flex-1">
+                                <button
+                                    onClick={() => setStep(1)}
+                                    disabled={processing}
+                                    className="btn-outline flex-1 disabled:opacity-50"
+                                >
                                     ← Back
                                 </button>
                                 <button
                                     onClick={handleSubmitProofs}
-                                    disabled={!zkProofs.humanness}
+                                    disabled={!zkProofs.humanness || processing}
                                     className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Complete Registration
+                                    {processing ? (
+                                        <span className="flex items-center gap-2">
+                                            <span className="animate-spin">⟳</span>
+                                            Processing...
+                                        </span>
+                                    ) : (
+                                        'Complete Registration'
+                                    )}
                                 </button>
                             </div>
                         </motion.div>
@@ -389,33 +446,53 @@ export default function RecipientPortal() {
                                 <span className="text-4xl">✓</span>
                             </div>
                             <h2 className="text-3xl font-bold text-matrix-green-primary mb-4">
-                                Profile Created Successfully!
+                                Profile Published Successfully!
                             </h2>
                             <p className="text-gray-400 mb-8">
-                                Your encrypted profile has been submitted to our matching service. You&apos;ll be
-                                notified when donors match your profile.
+                                Your profile has been processed through the Data Incinerator (NEAR AI TEE), stripped of
+                                all PII, and published to IPFS. Donors can now discover you through the matching
+                                service.
                             </p>
 
-                            <div className="bg-black/50 border border-matrix-green-primary/30 rounded-lg p-6 mb-8">
-                                <h3 className="font-bold text-matrix-green-primary mb-4">Your Profile</h3>
-                                <div className="space-y-2 text-left">
-                                    <p className="text-gray-300">
-                                        <span className="text-matrix-green-primary font-mono">Pseudonym:</span>{' '}
-                                        {profile.pseudonym}
-                                    </p>
-                                    <p className="text-gray-300">
-                                        <span className="text-matrix-green-primary">Category:</span> {profile.category}
-                                    </p>
-                                    <p className="text-gray-300">
-                                        <span className="text-matrix-green-primary">Skills:</span>{' '}
-                                        {profile.skills.join(', ')}
-                                    </p>
-                                    <p className="text-gray-300">
-                                        <span className="text-matrix-green-primary">Verifications:</span>{' '}
-                                        {Object.values(zkProofs).filter(Boolean).length} proofs submitted
-                                    </p>
+                            {ipfsHash && (
+                                <div className="bg-black/50 border border-matrix-green-primary/30 rounded-lg p-6 mb-8">
+                                    <h3 className="font-bold text-matrix-green-primary mb-4">Your Anonymous Persona</h3>
+                                    <div className="space-y-2 text-left">
+                                        <p className="text-gray-300">
+                                            <span className="text-matrix-green-primary font-mono">IPFS Hash:</span>{' '}
+                                            <span className="font-mono text-xs break-all">{ipfsHash}</span>
+                                        </p>
+                                        {ipfsUrl && (
+                                            <p className="text-gray-300">
+                                                <span className="text-matrix-green-primary">IPFS URL:</span>{' '}
+                                                <a
+                                                    href={ipfsUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-matrix-green-primary hover:underline break-all text-xs"
+                                                >
+                                                    {ipfsUrl}
+                                                </a>
+                                            </p>
+                                        )}
+                                        <p className="text-gray-300">
+                                            <span className="text-matrix-green-primary">Pseudonym:</span>{' '}
+                                            {profile.pseudonym}
+                                        </p>
+                                        <p className="text-gray-300">
+                                            <span className="text-matrix-green-primary">Category:</span> {profile.category}
+                                        </p>
+                                        <p className="text-gray-300">
+                                            <span className="text-matrix-green-primary">Skills:</span>{' '}
+                                            {profile.skills.join(', ')}
+                                        </p>
+                                        <p className="text-gray-300">
+                                            <span className="text-matrix-green-primary">Verifications:</span>{' '}
+                                            {Object.values(zkProofs).filter(Boolean).length} proofs submitted
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <button onClick={() => setStep(1)} className="btn-primary">
                                 Create Another Profile
