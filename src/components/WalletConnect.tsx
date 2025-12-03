@@ -2,6 +2,7 @@
 
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useEffect, useState } from "react";
+import { LogOut } from "lucide-react";
 
 export default function WalletConnect() {
   const { signedAccountId, signIn, signOut } = useWalletSelector();
@@ -34,7 +35,10 @@ export default function WalletConnect() {
   return (
     <>
       {!signedAccountId ? (
-        <button onClick={handleConnect} className="btn-primary">
+        <button
+          onClick={handleConnect}
+          className="glass-card px-4 py-2 flex items-center gap-3 hover:bg-matrix-green-primary/10 transition-colors group text-matrix-green-primary"
+        >
           <span className="flex items-center gap-2">
             <svg
               className="w-5 h-5"
@@ -53,16 +57,15 @@ export default function WalletConnect() {
           </span>
         </button>
       ) : (
-        <div className="flex items-center gap-4">
-          <div className="glass-card px-4 py-2">
-            <span className="font-mono text-sm text-matrix-green-primary">
-              {signedAccountId}
-            </span>
-          </div>
-          <button onClick={handleDisconnect} className="btn-outline">
-            Disconnect
-          </button>
-        </div>
+        <button
+          onClick={handleDisconnect}
+          className="glass-card px-4 py-2 flex items-center gap-3 hover:bg-matrix-green-primary/10 transition-colors group"
+        >
+          <span className="font-mono text-sm text-matrix-green-primary">
+            {signedAccountId}
+          </span>
+          <LogOut className="w-4 h-4 text-matrix-green-primary/70 group-hover:text-matrix-green-primary transition-colors" />
+        </button>
       )}
     </>
   );

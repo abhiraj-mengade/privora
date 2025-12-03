@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import Providers from "../../providers";
+import Providers from "@/providers";
 
 export const metadata: Metadata = {
-  title: "Privora - Private Programmable Philanthropy",
+  title: "Privora | Private Programmable Philanthropy",
   description:
     "Matching anonymous donors with verified-but-pseudonymous builders using Zcash, NEAR, and zk-proofs",
   manifest: "/manifest.json",
