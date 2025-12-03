@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Providers from "@/providers";
+import Footer from "@/app/footer";
+import Header from "@/app/header";
+import MatrixRain from "@/components/MatrixRain";
 
 export const metadata: Metadata = {
   title: "Privora | Private Programmable Philanthropy",
@@ -29,7 +32,16 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192x192.svg" />
       </head>
       <body className="antialiased">
-        <Providers>{children}</Providers>
+        <Providers>
+          {/* Gradient Background */}
+          <div className="matrix-bg" />
+
+          {/* Matrix Background */}
+          <MatrixRain />
+          <Header />
+          {children}
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

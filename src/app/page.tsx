@@ -1,19 +1,8 @@
-import MatrixRain from "@/components/MatrixRain";
-import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 
 export default function Home() {
   return (
     <main className="relative min-h-screen">
-      {/* Gradient Background */}
-      <div className="matrix-bg" />
-
-      {/* Matrix Background */}
-      <MatrixRain />
-
-      {/* Navigation */}
-      <Navbar />
-
       {/* Hero Section */}
       <Hero />
 
@@ -211,37 +200,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-matrix-green-primary/20 py-12">
-        <div className="container-max px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="text-sm text-gray-500">
-              © 2024 Privora. Private philanthropy for the modern age.
-            </div>
-            <div className="flex gap-6">
-              <a
-                href="#"
-                className="text-matrix-green-primary hover:text-matrix-green-light transition-colors text-sm"
-              >
-                Documentation
-              </a>
-              <a
-                href="#"
-                className="text-matrix-green-primary hover:text-matrix-green-light transition-colors text-sm"
-              >
-                GitHub
-              </a>
-              <a
-                href="#"
-                className="text-matrix-green-primary hover:text-matrix-green-light transition-colors text-sm"
-              >
-                Contact
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }
