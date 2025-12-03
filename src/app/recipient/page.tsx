@@ -7,6 +7,7 @@ import MatrixRain from '@/components/MatrixRain';
 import { stripPII } from '@/lib/near-ai';
 import { uploadToIPFS } from '@/lib/ipfs';
 import { storePersona } from '@/lib/persona-store';
+import { ReclaimProofRequest } from '@reclaimprotocol/js-sdk';
 
 interface RecipientProfile {
     pseudonym: string;
@@ -35,6 +36,14 @@ export default function RecipientPortal() {
         nsResident: false,
         location: false,
     });
+
+    // Reclaim proofs (GitHub / Leetcode / Scholar / Location) and sanitized persona from NEAR AI
+    const [githubProof, setGithubProof] = useState<any | null>(null);
+    const [leetcodeProof, setLeetcodeProof] = useState<any | null>(null);
+    const [scholarProof, setScholarProof] = useState<any | null>(null);
+    const [locationProof, setLocationProof] = useState<any | null>(null);
+    const [sanitizedPersona, setSanitizedPersona] = useState<any | null>(null);
+    const [zcashAddress, setZcashAddress] = useState<string>('');
 
     const categoryOptions = [
         'Privacy Tools Developer',
@@ -76,12 +85,85 @@ export default function RecipientPortal() {
     const [ipfsHash, setIpfsHash] = useState<string | null>(null);
     const [ipfsUrl, setIpfsUrl] = useState<string | null>(null);
 
-    const handleSubmitProofs = async () => {
+    const startReclaimSession = async (
+        providerId: string | undefined,
+        setProof: (p: any) => void,
+        label: string
+    ) => {
+        try {
+            setError(null);
+            const appId = process.env.NEXT_PUBLIC_RECLAIM_APP_ID;
+            const appSecret = process.env.NEXT_PUBLIC_RECLAIM_APP_SECRET;
+
+            if (!appId || !appSecret) {
+                throw new Error('Reclaim APP_ID/APP_SECRET not configured');
+            }
+
+            if (!providerId) {
+                throw new Error(`Reclaim provider ID not configured for ${label}`);
+            }
+
+            // Initialize a proof request for this provider
+            const reclaimClient = await ReclaimProofRequest.init(appId, appSecret, providerId, {
+                log: true,
+            });
+
+            // Get the URL where the user completes the verification
+            const requestUrl = await reclaimClient.getRequestUrl();
+
+            // Open Reclaim UI in a new tab/window so the user can complete the flow
+            if (typeof window !== 'undefined') {
+                window.open(requestUrl, '_blank', 'noopener,noreferrer');
+            }
+
+            // Start polling session status; onSuccess fires when proof is ready
+            await reclaimClient.startSession({
+                onSuccess: (proof) => {
+                    setProof(proof);
+                },
+                onError: (err) => {
+                    console.error(`${label} verification failed`, err);
+                    setError(`${label} verification failed`);
+                },
+            });
+        } catch (e) {
+            console.error(e);
+            setError(e instanceof Error ? e.message : `Failed to start ${label} verification`);
+        }
+    };
+
+    const handleVerifyGitHub = async () => {
+        const providerId =
+            process.env.NEXT_PUBLIC_RECLAIM_PROVIDER_GITHUB_ID ||
+            '8573efb4-4529-47d3-80da-eaa7384dac19';
+        await startReclaimSession(providerId, setGithubProof, 'GitHub');
+    };
+
+    const handleVerifyLeetcode = async () => {
+        const providerId =
+            process.env.NEXT_PUBLIC_RECLAIM_PROVIDER_LEETCODE_ID ||
+            '29162ff4-c52c-4275-829e-f8eaba1e7b99';
+        await startReclaimSession(providerId, setLeetcodeProof, 'Leetcode');
+    };
+
+    const handleVerifyScholar = async () => {
+        const providerId =
+            process.env.NEXT_PUBLIC_RECLAIM_PROVIDER_SCHOLAR_ID ||
+            '5f97d753-4bb6-484d-8686-72fc772272fa';
+        await startReclaimSession(providerId, setScholarProof, 'Google Scholar');
+    };
+
+    const handleVerifyLocation = async () => {
+        const providerId =
+            process.env.NEXT_PUBLIC_RECLAIM_PROVIDER_LOCATION_ID ||
+            '44fb27b2-64b9-48b4-a712-737194679158';
+        await startReclaimSession(providerId, setLocationProof, 'Location');
+    };
+
+    const handleSanitize = async () => {
         setProcessing(true);
         setError(null);
-
         try {
-            // Step 1: Strip PII using NEAR AI Cloud (Data Incinerator)
             const rawProfile = {
                 pseudonym: profile.pseudonym,
                 category: profile.category,
@@ -92,13 +174,47 @@ export default function RecipientPortal() {
                 portfolio: profile.portfolio || undefined,
                 verificationFlags: zkProofs,
             };
-
             const strippedProfile = await stripPII(rawProfile);
+            setSanitizedPersona(strippedProfile);
+        } catch (e) {
+            console.error('Error sanitizing bio:', e);
+            setError(e instanceof Error ? e.message : 'Failed to sanitize bio');
+        } finally {
+            setProcessing(false);
+        }
+    };
 
-            // Step 2: Upload to IPFS
-            const ipfsResult = await uploadToIPFS(strippedProfile);
+    const handleSubmitProofs = async () => {
+        setProcessing(true);
+        setError(null);
 
-            // Step 3: Store locally
+        try {
+            if (!sanitizedPersona) {
+                await handleSanitize();
+            }
+
+            if (!sanitizedPersona) {
+                throw new Error('Sanitized persona not available');
+            }
+
+            if (!zcashAddress.startsWith('zs1')) {
+                throw new Error('Valid Zcash shielded address (zs1...) is required');
+            }
+
+            // Compose final persona object that donors will download from IPFS
+            const finalProfile = {
+                persona: sanitizedPersona,
+                proofs: {
+                    github: githubProof,
+                    leetcode: leetcodeProof,
+                    scholar: scholarProof,
+                    location: locationProof,
+                },
+                paymentAddress: zcashAddress,
+            };
+
+            const ipfsResult = await uploadToIPFS(finalProfile);
+
             storePersona(ipfsResult.ipfsHash, ipfsResult.ipfsUrl);
 
             setIpfsHash(ipfsResult.ipfsHash);
@@ -275,7 +391,7 @@ export default function RecipientPortal() {
                                 />
                             </div>
 
-                            <div className="mb-8">
+                            <div className="mb-6">
                                 <label className="block text-matrix-green-primary font-semibold mb-3">
                                     Portfolio (optional)
                                 </label>
@@ -286,6 +402,23 @@ export default function RecipientPortal() {
                                     placeholder="https://your-portfolio.com"
                                     className="input-field"
                                 />
+                            </div>
+
+                            {/* Zcash shielded address */}
+                            <div className="mb-8">
+                                <label className="block text-matrix-green-primary font-semibold mb-3">
+                                    Zcash shielded address
+                                </label>
+                                <input
+                                    type="text"
+                                    value={zcashAddress}
+                                    onChange={(e) => setZcashAddress(e.target.value.trim())}
+                                    placeholder="zs1..."
+                                    className="input-field font-mono"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    This address receives shielded ZEC from donors. Keep it private and safe.
+                                </p>
                             </div>
 
                             <button
@@ -311,10 +444,12 @@ export default function RecipientPortal() {
                             className="glass-card p-7 md:p-10 max-w-3xl mx-auto border border-matrix-green-primary/30"
                         >
                             <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-2">
-                                Submit zk-proofs
+                                Optional zk-proofs & sanitize bio
                             </h2>
                             <p className="text-gray-400 mb-8 text-xs md:text-sm">
-                                Verify your credentials without revealing your identity—proofs of membership, not KYC.
+                                Optionally add zk-proofs for humanness, activity, or location without revealing your
+                                identity. Then send your bio through the Data Incinerator (NEAR AI TEE) before
+                                publishing.
                             </p>
 
                             <div className="space-y-6">
@@ -395,12 +530,95 @@ export default function RecipientPortal() {
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => setZkProofs({ ...zkProofs, location: true })}
+                                        onClick={() => {
+                                            setZkProofs({ ...zkProofs, location: true });
+                                            void handleVerifyLocation();
+                                        }}
                                         className="btn-outline text-sm w-full"
                                     >
-                                        {zkProofs.location ? 'Verified ✓' : 'Verify Location'}
+                                        {zkProofs.location ? 'Location Verified ✓' : 'Verify Location via Reclaim'}
                                     </button>
                                 </div>
+                            </div>
+
+                            {/* Reclaim GitHub proof */}
+                            <div className="border border-matrix-green-primary/30 rounded-lg p-6 mt-6">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-matrix-green-primary mb-2">
+                                            GitHub contributor proof
+                                        </h3>
+                                        <p className="text-gray-400 text-sm">
+                                            Use Reclaim to prove ownership and activity of a GitHub account without
+                                            revealing the handle.
+                                        </p>
+                                    </div>
+                                    <div
+                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                            githubProof
+                                                ? 'bg-matrix-green-primary border-matrix-green-primary'
+                                                : 'border-matrix-green-primary/50'
+                                        }`}
+                                    >
+                                        {githubProof && <span className="text-black text-sm">✓</span>}
+                                    </div>
+                                </div>
+                                <button onClick={handleVerifyGitHub} className="btn-outline text-sm w-full">
+                                    {githubProof ? 'GitHub Verified ✓' : 'Verify GitHub via Reclaim'}
+                                </button>
+                            </div>
+
+                            {/* Reclaim Leetcode proof */}
+                            <div className="border border-matrix-green-primary/30 rounded-lg p-6 mt-4">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-matrix-green-primary mb-2">
+                                            Leetcode proof
+                                        </h3>
+                                        <p className="text-gray-400 text-sm">
+                                            Prove your problem-solving activity on Leetcode without revealing your
+                                            username.
+                                        </p>
+                                    </div>
+                                    <div
+                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                            leetcodeProof
+                                                ? 'bg-matrix-green-primary border-matrix-green-primary'
+                                                : 'border-matrix-green-primary/50'
+                                        }`}
+                                    >
+                                        {leetcodeProof && <span className="text-black text-sm">✓</span>}
+                                    </div>
+                                </div>
+                                <button onClick={handleVerifyLeetcode} className="btn-outline text-sm w-full">
+                                    {leetcodeProof ? 'Leetcode Verified ✓' : 'Verify Leetcode via Reclaim'}
+                                </button>
+                            </div>
+
+                            {/* Reclaim Google Scholar proof */}
+                            <div className="border border-matrix-green-primary/30 rounded-lg p-6 mt-4">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-matrix-green-primary mb-2">
+                                            Google Scholar proof
+                                        </h3>
+                                        <p className="text-gray-400 text-sm">
+                                            Prove citations / publications via Google Scholar in zero-knowledge.
+                                        </p>
+                                    </div>
+                                    <div
+                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                            scholarProof
+                                                ? 'bg-matrix-green-primary border-matrix-green-primary'
+                                                : 'border-matrix-green-primary/50'
+                                        }`}
+                                    >
+                                        {scholarProof && <span className="text-black text-sm">✓</span>}
+                                    </div>
+                                </div>
+                                <button onClick={handleVerifyScholar} className="btn-outline text-sm w-full">
+                                    {scholarProof ? 'Scholar Verified ✓' : 'Verify Scholar via Reclaim'}
+                                </button>
                             </div>
 
                             {error && (
@@ -419,7 +637,7 @@ export default function RecipientPortal() {
                                 </button>
                                 <button
                                     onClick={handleSubmitProofs}
-                                    disabled={!zkProofs.humanness || processing}
+                                    disabled={processing}
                                     className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {processing ? (

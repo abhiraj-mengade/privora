@@ -9,71 +9,34 @@ export interface IPFSUploadResult {
 }
 
 /**
- * Upload persona to IPFS
- * For now, we'll use a simple approach with Pinata or public IPFS gateway
+ * Upload persona to IPFS.
+ *
+ * - In production, this calls our Next.js API route, which talks to Pinata using
+ *   server-side `PINATA_API_KEY` and `PINATA_SECRET_KEY` (never exposed to the browser).
+ * - In development (or if the API fails), we fall back to a localStorage-based mock hash.
  */
 export async function uploadToIPFS(data: unknown): Promise<IPFSUploadResult> {
-    // Option 1: Use Pinata (requires API key)
-    const pinataApiKey = process.env.NEXT_PUBLIC_PINATA_API_KEY;
-    const pinataSecretKey = process.env.NEXT_PUBLIC_PINATA_SECRET_KEY;
-
-    if (pinataApiKey && pinataSecretKey) {
-        return uploadToPinata(data, pinataApiKey, pinataSecretKey);
-    }
-
-    // Option 2: Use public IPFS gateway (web3.storage or similar)
-    // For demo purposes, we'll use a simple approach
-    return uploadToPublicIPFS(data);
-}
-
-async function uploadToPinata(
-    data: unknown,
-    apiKey: string,
-    secretKey: string
-): Promise<IPFSUploadResult> {
     try {
-        // Convert data to JSON blob
-        const json = JSON.stringify(data);
-        const blob = new Blob([json], { type: 'application/json' });
-        const formData = new FormData();
-        formData.append('file', blob, 'persona.json');
-
-        const metadata = JSON.stringify({
-            name: 'privora-persona',
-            keyvalues: {
-                type: 'persona',
-                timestamp: Date.now().toString(),
-            },
-        });
-        formData.append('pinataMetadata', metadata);
-
-        const options = JSON.stringify({
-            cidVersion: 0,
-        });
-        formData.append('pinataOptions', options);
-
-        const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        // Prefer server-side Pinata upload via API route
+        const response = await fetch('/api/ipfs/pin', {
             method: 'POST',
             headers: {
-                pinata_api_key: apiKey,
-                pinata_secret_api_key: secretKey,
+                'Content-Type': 'application/json',
             },
-            body: formData,
+            body: JSON.stringify(data),
         });
 
-        if (!response.ok) {
-            throw new Error(`Pinata upload failed: ${response.statusText}`);
+        if (response.ok) {
+            return (await response.json()) as IPFSUploadResult;
         }
 
-        const result = await response.json();
-        const ipfsHash = result.IpfsHash;
-        const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
-
-        return { ipfsHash, ipfsUrl };
+        console.warn('Pinata API route failed, falling back to public IPFS:', await response.text());
     } catch (error) {
-        console.error('Error uploading to Pinata:', error);
-        throw error;
+        console.warn('Error calling Pinata API route, falling back to public IPFS:', error);
     }
+
+    // Fallback: Use public IPFS (web3.storage or local mock)
+    return uploadToPublicIPFS(data);
 }
 
 async function uploadToPublicIPFS(data: unknown): Promise<IPFSUploadResult> {
