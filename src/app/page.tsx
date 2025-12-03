@@ -1,15 +1,15 @@
-import MatrixRain from '@/components/MatrixRain';
-import Navbar from '@/components/Navbar';
-import Hero from '@/components/Hero';
+import MatrixRain from "@/components/MatrixRain";
+import Navbar from "@/components/Navbar";
+import Hero from "@/components/Hero";
 
 export default function Home() {
   return (
     <main className="relative min-h-screen">
-      {/* Matrix Background */}
-      <MatrixRain />
-
       {/* Gradient Background */}
       <div className="matrix-bg" />
+
+      {/* Matrix Background */}
+      <MatrixRain />
 
       {/* Navigation */}
       <Navbar />
@@ -25,12 +25,13 @@ export default function Home() {
               FLOW
             </p>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold md:font-bold mb-4">
-              <span className="glow-text">Two interfaces,</span>{' '}
+              <span className="glow-text">Two interfaces,</span>{" "}
               <span className="text-white/90">one private graph.</span>
             </h2>
             <p className="text-sm md:text-base text-gray-400">
-              Donors express intent. Recipients prove credibility. Privora stitches encrypted
-              signals into matches without exposing either side to the public ledger.
+              Donors express intent. Recipients prove credibility. Privora
+              stitches encrypted signals into matches without exposing either
+              side to the public ledger.
             </p>
           </div>
 
@@ -59,19 +60,31 @@ export default function Home() {
               <ul className="space-y-3 text-gray-300 text-sm md:text-[15px]">
                 <li className="flex items-start gap-3">
                   <span className="mt-1 h-5 w-[1px] bg-matrix-green-primary/70" />
-                  <span>Specify topics, geography and funding amount in a private preference UI.</span>
+                  <span>
+                    Specify topics, geography and funding amount in a private
+                    preference UI.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="mt-1 h-5 w-[1px] bg-matrix-green-primary/70" />
-                  <span>Browse pseudonymous, verified recipients—no names, just proofs and work.</span>
+                  <span>
+                    Browse pseudonymous, verified recipients—no names, just
+                    proofs and work.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="mt-1 h-5 w-[1px] bg-matrix-green-primary/70" />
-                  <span>Send ZEC to shielded addresses so amounts and counterparties never go public.</span>
+                  <span>
+                    Send ZEC to shielded addresses so amounts and counterparties
+                    never go public.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="mt-1 h-5 w-[1px] bg-matrix-green-primary/70" />
-                  <span>Receive a non-transferable SBT on NEAR as proof of impact, not clout.</span>
+                  <span>
+                    Receive a non-transferable SBT on NEAR as proof of impact,
+                    not clout.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -100,19 +113,31 @@ export default function Home() {
               <ul className="space-y-3 text-gray-300 text-sm md:text-[15px]">
                 <li className="flex items-start gap-3">
                   <span className="mt-1 h-5 w-[1px] bg-matrix-green-primary/70" />
-                  <span>Create an encrypted profile with skills, focus areas, and coarse geography.</span>
+                  <span>
+                    Create an encrypted profile with skills, focus areas, and
+                    coarse geography.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="mt-1 h-5 w-[1px] bg-matrix-green-primary/70" />
-                  <span>Attach zk-proofs for humanness, affiliations, or residency—no identity leakage.</span>
+                  <span>
+                    Attach zk-proofs for humanness, affiliations, or
+                    residency—no identity leakage.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="mt-1 h-5 w-[1px] bg-matrix-green-primary/70" />
-                  <span>Get matched against donor intents via encrypted attribute graphs.</span>
+                  <span>
+                    Get matched against donor intents via encrypted attribute
+                    graphs.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="mt-1 h-5 w-[1px] bg-matrix-green-primary/70" />
-                  <span>Receive funds through Zcash shielded transfers, not doxxable bank rails.</span>
+                  <span>
+                    Receive funds through Zcash shielded transfers, not doxxable
+                    bank rails.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -128,34 +153,34 @@ export default function Home() {
               STACK
             </p>
             <h2 className="text-3xl md:text-4xl font-semibold md:font-bold mb-4">
-              <span className="glow-text">Privacy-first primitives,</span>{' '}
+              <span className="glow-text">Privacy-first primitives,</span>{" "}
               <span className="text-white/90">composed for philanthropy.</span>
             </h2>
             <p className="text-sm md:text-base text-gray-400">
-              Each layer handles exactly one job—payments, coordination, proofs—so we can reason
-              about guarantees without hand-waving.
+              Each layer handles exactly one job—payments, coordination,
+              proofs—so we can reason about guarantees without hand-waving.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 md:gap-8">
             {[
               {
-                title: 'Zcash shielded set',
+                title: "Zcash shielded set",
                 description:
-                  'Donations flow through Z-addresses. Amounts, senders, and recipients stay encrypted while still being auditable by the parties involved.',
-                tech: 'zk-SNARKs',
+                  "Donations flow through Z-addresses. Amounts, senders, and recipients stay encrypted while still being auditable by the parties involved.",
+                tech: "zk-SNARKs",
               },
               {
-                title: 'NEAR coordination',
+                title: "NEAR coordination",
                 description:
-                  'Smart contracts orchestrate intents, matches, and impact SBTs—only hashes and flags on-chain, never raw profiles or preferences.',
-                tech: 'Rust · WASM',
+                  "Smart contracts orchestrate intents, matches, and impact SBTs—only hashes and flags on-chain, never raw profiles or preferences.",
+                tech: "Rust · WASM",
               },
               {
-                title: 'Zero-knowledge proofs',
+                title: "Zero-knowledge proofs",
                 description:
-                  'Recipients prove humanness, cohorts, or residency via circuits like Semaphore: “member of set X” without revealing which member.',
-                tech: 'ZK Circuits',
+                  "Recipients prove humanness, cohorts, or residency via circuits like Semaphore: “member of set X” without revealing which member.",
+                tech: "ZK Circuits",
               },
             ].map((item, idx) => (
               <div
@@ -177,7 +202,9 @@ export default function Home() {
 
                 <div className="mt-4 pt-4 border-t border-matrix-green-primary/15 text-[11px] text-gray-500 font-mono flex items-center justify-between">
                   <span>Deterministic guarantees</span>
-                  <span className="text-matrix-green-primary/70">no manual screening</span>
+                  <span className="text-matrix-green-primary/70">
+                    no manual screening
+                  </span>
                 </div>
               </div>
             ))}
@@ -193,13 +220,22 @@ export default function Home() {
               © 2024 Privora. Private philanthropy for the modern age.
             </div>
             <div className="flex gap-6">
-              <a href="#" className="text-matrix-green-primary hover:text-matrix-green-light transition-colors text-sm">
+              <a
+                href="#"
+                className="text-matrix-green-primary hover:text-matrix-green-light transition-colors text-sm"
+              >
                 Documentation
               </a>
-              <a href="#" className="text-matrix-green-primary hover:text-matrix-green-light transition-colors text-sm">
+              <a
+                href="#"
+                className="text-matrix-green-primary hover:text-matrix-green-light transition-colors text-sm"
+              >
                 GitHub
               </a>
-              <a href="#" className="text-matrix-green-primary hover:text-matrix-green-light transition-colors text-sm">
+              <a
+                href="#"
+                className="text-matrix-green-primary hover:text-matrix-green-light transition-colors text-sm"
+              >
                 Contact
               </a>
             </div>
