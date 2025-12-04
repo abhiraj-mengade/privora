@@ -756,12 +756,106 @@ export default function PatronPortal() {
                 </button>
               </motion.div>
 
-              {/* Browse all recipients */}
+              {/* Right column: Startup Societies + Browse all builders */}
+              <div className="flex flex-col gap-6 h-full">
+              {/* Startup Societies Section */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 }}
-                className="glass-card p-6 md:p-7 border border-matrix-green-primary/20 max-h-[560px] overflow-y-auto"
+                className="glass-card p-6 md:p-7 border border-matrix-green-primary/20 flex-shrink-0"
+              >
+                <h3 className="text-lg md:text-xl font-semibold text-matrix-green-primary mb-4">
+                  Startup Societies (ZK-Census)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {startupSocieties.map((society) => {
+                    // Filter profiles by society
+                    const societyProfiles = allProfiles.filter((entry) => {
+                      const proofs = entry.profile?.proofs ?? {};
+                      if (society.id === "networkSchool") {
+                        return proofs.networkSchool;
+                      }
+                      // For other societies, check if they exist in proofs
+                      // (currently only Network School is implemented)
+                      return proofs[society.id] || false;
+                    });
+
+                    return (
+                      <div
+                        key={society.id}
+                        className="border border-matrix-green-primary/25 rounded-lg p-4"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className={`font-semibold ${society.color}`}>
+                            {society.name}
+                          </h4>
+                          <span className="text-xs text-gray-500 font-mono">
+                            {societyProfiles.length} members
+                          </span>
+                        </div>
+                        {societyProfiles.length === 0 ? (
+                          <p className="text-xs text-gray-500">
+                            No verified members yet
+                          </p>
+                        ) : (
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {societyProfiles.map((entry) => {
+                              const persona = entry.profile?.persona ?? {};
+                              const ipfsHash = entry.ipfsHash;
+                              const funded = fundedStatus[ipfsHash];
+                              return (
+                                <div
+                                  key={ipfsHash}
+                                  className="flex items-center justify-between p-2 rounded border border-matrix-green-primary/10 hover:bg-matrix-green-subtle/10 cursor-pointer"
+                                  onClick={() => openDirectModal(entry)}
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-xs font-mono text-matrix-green-primary truncate">
+                                        {persona.pseudonym ?? "Anonymous"}
+                                      </p>
+                                      {funded?.funded && (
+                                        <span className="text-[9px] text-yellow-400">
+                                          ✓{" "}
+                                          {formatZEC(
+                                            funded.totalAmountZats / 1e8
+                                          )}{" "}
+                                          ({funded.count})
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 truncate">
+                                      {persona.category ?? "Uncategorized"}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openDirectModal(entry);
+                                    }}
+                                    className="btn-outline text-[10px] px-2 py-1 ml-2"
+                                  >
+                                    Fund
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+
+              {/* Browse all recipients */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="glass-card p-6 md:p-7 border border-matrix-green-primary/20 overflow-y-auto flex-1"
+                style={{ minHeight: 0 }}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -919,97 +1013,7 @@ export default function PatronPortal() {
                   </div>
                 )}
               </motion.div>
-
-              {/* Startup Societies Section */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="glass-card p-6 md:p-7 border border-matrix-green-primary/20 mt-6"
-              >
-                <h3 className="text-lg md:text-xl font-semibold text-matrix-green-primary mb-4">
-                  Startup Societies (ZK-Census)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {startupSocieties.map((society) => {
-                    // Filter profiles by society
-                    const societyProfiles = allProfiles.filter((entry) => {
-                      const proofs = entry.profile?.proofs ?? {};
-                      if (society.id === "networkSchool") {
-                        return proofs.networkSchool;
-                      }
-                      // For other societies, check if they exist in proofs
-                      // (currently only Network School is implemented)
-                      return proofs[society.id] || false;
-                    });
-
-                    return (
-                      <div
-                        key={society.id}
-                        className="border border-matrix-green-primary/25 rounded-lg p-4"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className={`font-semibold ${society.color}`}>
-                            {society.name}
-                          </h4>
-                          <span className="text-xs text-gray-500 font-mono">
-                            {societyProfiles.length} members
-                          </span>
-                        </div>
-                        {societyProfiles.length === 0 ? (
-                          <p className="text-xs text-gray-500">
-                            No verified members yet
-                          </p>
-                        ) : (
-                          <div className="space-y-2 max-h-48 overflow-y-auto">
-                            {societyProfiles.map((entry) => {
-                              const persona = entry.profile?.persona ?? {};
-                              const ipfsHash = entry.ipfsHash;
-                              const funded = fundedStatus[ipfsHash];
-                              return (
-                                <div
-                                  key={ipfsHash}
-                                  className="flex items-center justify-between p-2 rounded border border-matrix-green-primary/10 hover:bg-matrix-green-subtle/10 cursor-pointer"
-                                  onClick={() => openDirectModal(entry)}
-                                >
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <p className="text-xs font-mono text-matrix-green-primary truncate">
-                                        {persona.pseudonym ?? "Anonymous"}
-                                      </p>
-                                      {funded?.funded && (
-                                        <span className="text-[9px] text-yellow-400">
-                                          ✓{" "}
-                                          {formatZEC(
-                                            funded.totalAmountZats / 1e8
-                                          )}{" "}
-                                          ({funded.count})
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className="text-[10px] text-gray-500 truncate">
-                                      {persona.category ?? "Uncategorized"}
-                                    </p>
-                                  </div>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openDirectModal(entry);
-                                    }}
-                                    className="btn-outline text-[10px] px-2 py-1 ml-2"
-                                  >
-                                    Fund
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
+              </div>
             </div>
           ) : (
             /* Step 2: Matched Recipients */
