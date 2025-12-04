@@ -441,6 +441,18 @@ export default function PatronPortal() {
         // Expected structure: { ipfsHash: "...", profile: PIIStrippedProfile }
         // Extract the persona object (which is the sanitized PIIStrippedProfile)
         const persona = p.profile?.persona || p.profile;
+        
+        // Ensure verificationFlags exists with defaults
+        if (persona && !persona.verificationFlags) {
+          // Try to get from proofs if available
+          const proofs = p.profile?.proofs || {};
+          persona.verificationFlags = {
+            humanness: proofs.humanness || false,
+            nsResident: proofs.nsResident || false,
+            location: proofs.location || false,
+          };
+        }
+        
         return {
           ipfsHash: p.ipfsHash,
           profile: persona,
@@ -448,10 +460,14 @@ export default function PatronPortal() {
       });
 
       // Step 4: Use AI to find matches (Agentic Wallet)
+      // Sending ALL available personas to NEAR AI Cloud for matching
+      // NEAR AI returns match scores (0-100) and match reasons for each persona
+      console.log(`Sending ${transformedPersonas.length} personas to NEAR AI for matching`);
       const matched = await findMatchingPersonas(
         preferences,
         transformedPersonas
       );
+      console.log(`Received ${matched.length} matches with scores:`, matched.map(m => ({ pseudonym: m.pseudonym, score: m.matchScore })));
 
       setMatches(matched);
       setStep(2);
@@ -1060,12 +1076,12 @@ export default function PatronPortal() {
                           <h3 className="text-xl font-bold font-mono text-matrix-green-primary">
                             {match.pseudonym}
                           </h3>
-                          {match.verificationFlags.humanness && (
+                          {match.verificationFlags?.humanness && (
                             <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30">
                               Verified
                             </span>
                           )}
-                          {match.verificationFlags.nsResident && (
+                          {match.verificationFlags?.nsResident && (
                             <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30 font-mono">
                               NS
                             </span>
@@ -1201,20 +1217,31 @@ export default function PatronPortal() {
                         ) : (
                           <>
                             <button
-                              onClick={() => handleSendDonation(match)}
-                              disabled={sendingDonation === match.ipfsHash}
-                              className="btn-primary text-sm px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => {
+                                // Open direct funding modal with the matched profile
+                                const fullProfile = allProfiles.find(p => p.ipfsHash === match.ipfsHash);
+                                if (fullProfile) {
+                                  openDirectModal(fullProfile);
+                                } else {
+                                  // Fallback: create a profile entry from match
+                                  openDirectModal({
+                                    ipfsHash: match.ipfsHash,
+                                    profile: {
+                                      persona: {
+                                        pseudonym: match.pseudonym,
+                                        category: match.category,
+                                        skills: match.skills,
+                                        bio: match.bio,
+                                        location: match.location,
+                                      },
+                                      paymentAddress: undefined, // Will be retrieved from IPFS
+                                    },
+                                  });
+                                }
+                              }}
+                              className="btn-primary text-sm px-6"
                             >
-                              {sendingDonation === match.ipfsHash ? (
-                                <span className="flex items-center gap-2">
-                                  <span className="animate-spin">⟳</span>
-                                  Loading...
-                                </span>
-                              ) : (
-                                `Send ${formatZEC(
-                                  parseFloat(preferences.amount)
-                                )}`
-                              )}
+                              Fund directly
                             </button>
                             <button className="btn-outline text-sm px-6">
                               View Details
@@ -1232,8 +1259,8 @@ export default function PatronPortal() {
       </div>
       {/* Direct funding modal */}
       {directOpen && directProfile && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="glass-card max-w-md w-full mx-4 p-6 border border-matrix-green-primary/40">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 overflow-y-auto py-8">
+          <div className="glass-card max-w-md w-full mx-4 p-6 border border-matrix-green-primary/40 my-auto">
             <h3 className="text-lg font-semibold text-matrix-green-primary mb-2">
               Fund {directProfile.profile?.persona?.pseudonym ?? "builder"}{" "}
               privately

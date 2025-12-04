@@ -184,10 +184,10 @@ Available Personas:
 ${JSON.stringify(personasSummary, null, 2)}
 
 Your task:
-1. Score each persona (0-100) based on how well they match the donor's intent
+1. Score EACH persona (0-100) based on how well they match the donor's intent
 2. Consider topic alignment, geographic preferences, verification status, and funding needs
 3. If the donor hasn't specified topics or preferences, be more lenient and match based on general alignment
-4. Return personas with score >= 30 (lower threshold to ensure matches), sorted by match score (highest first)
+4. Return ALL personas with their scores, sorted by match score (highest first)
 5. Provide a brief reason for each match
 
 Return ONLY a valid JSON array with this exact structure:
@@ -199,7 +199,7 @@ Return ONLY a valid JSON array with this exact structure:
     }
 ]
 
-Include only personas with matchScore >= 30, sorted by matchScore descending. If no personas meet the threshold, return the top 1-2 personas anyway with their scores.`;
+IMPORTANT: Return ALL personas (one entry for each persona in the Available Personas list), sorted by matchScore descending. Do not filter by score threshold - include everyone so the donor can see all available builders and make their own decisions.`;
 
     try {
         const response = await fetch(NEAR_AI_API_ROUTE, {
@@ -249,23 +249,55 @@ Include only personas with matchScore >= 30, sorted by matchScore descending. If
             matchReason: string;
         }>;
 
-        // Map matches back to full persona data
-        const matchedPersonas: MatchedPersona[] = matches.map((match) => {
-            const persona = availablePersonas[match.index];
-            return {
-                ipfsHash: persona.ipfsHash,
-                pseudonym: persona.profile.pseudonym,
-                category: persona.profile.category,
-                skills: persona.profile.skills,
-                bio: persona.profile.bio,
-                location: persona.profile.location,
-                // Best-effort: propagate fundingNeed if present (optional).
-                fundingNeed: (persona as any).fundingNeed,
-                matchScore: match.matchScore,
-                matchReason: match.matchReason,
-                verificationFlags: persona.profile.verificationFlags,
-            };
-        });
+        // Safety check: if NEAR AI didn't return all personas, add missing ones with default scores
+        const returnedIndices = new Set(matches.map(m => m.index));
+        const missingPersonas = availablePersonas
+            .map((p, idx) => ({ persona: p, index: idx }))
+            .filter(({ index }) => !returnedIndices.has(index));
+
+        // Add missing personas with a default low score
+        if (missingPersonas.length > 0) {
+            console.warn(`NEAR AI didn't return all personas. Adding ${missingPersonas.length} missing personas with default scores.`);
+            missingPersonas.forEach(({ persona, index }) => {
+                matches.push({
+                    index,
+                    matchScore: 20, // Default low score for personas not returned by AI
+                    matchReason: "Available builder - review profile to assess fit",
+                });
+            });
+        }
+
+        // Map matches back to full persona data, sorted by score
+        const matchedPersonas: MatchedPersona[] = matches
+            .map((match) => {
+                const persona = availablePersonas[match.index];
+                if (!persona) {
+                    console.warn(`Persona at index ${match.index} not found`);
+                    return null;
+                }
+                // Safely extract verificationFlags with defaults
+                const verificationFlags = persona.profile.verificationFlags || {
+                    humanness: false,
+                    nsResident: false,
+                    location: false,
+                };
+
+                return {
+                    ipfsHash: persona.ipfsHash,
+                    pseudonym: persona.profile.pseudonym || "Anonymous",
+                    category: persona.profile.category || "General",
+                    skills: persona.profile.skills || [],
+                    bio: persona.profile.bio || "",
+                    location: persona.profile.location || "Unknown",
+                    // Best-effort: propagate fundingNeed if present (optional).
+                    fundingNeed: persona.profile.fundingNeed || (persona as any).fundingNeed,
+                    matchScore: match.matchScore,
+                    matchReason: match.matchReason,
+                    verificationFlags,
+                };
+            })
+            .filter((p): p is MatchedPersona => p !== null)
+            .sort((a, b) => b.matchScore - a.matchScore); // Sort by score descending
 
         return matchedPersonas;
     } catch (error) {
