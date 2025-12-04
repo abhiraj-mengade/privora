@@ -38,7 +38,8 @@ This isn't just privacy theater. It's a cryptographic guarantee that enables hig
 Privora follows a **layered architecture** where each component handles exactly one concern, allowing us to reason about privacy guarantees without hand-waving.
 
 <div align="center">
- <img width="8168" height="4302" alt="image" src="https://github.com/user-attachments/assets/fa65a1cc-78bb-4cd4-ad7b-5e67a68a07ac" />
+ <img width="4608" height="2425" alt="Untitled design (7)" src="https://github.com/user-attachments/assets/783ef491-b521-4122-abc0-49d3d19524ef" />
+
   <p><em>Complete workflow showing the privacy-preserving donation flow from intent to impact</em></p>
 </div>
 
