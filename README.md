@@ -1,6 +1,19 @@
-# Privora
+<div align="center">
 
-> **Private capital for public impact.** A privacy-preserving philanthropy platform that enables anonymous donors to fund verified-but-pseudonymous builders through shielded Zcash transactions, coordinated on NEAR, with zero-knowledge proofs ensuring credibility without identity leakage.
+# PRIVØRA
+
+  <img src="public/banner.png" alt="Privora Banner" width="100%" />
+
+**Private capital for public impact.**
+
+A privacy-preserving philanthropy platform that enables anonymous donors to fund verified-but-pseudonymous builders through shielded Zcash transactions, coordinated on NEAR, with zero-knowledge proofs ensuring credibility without identity leakage.
+
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Built with Next.js](https://img.shields.io/badge/Built%20with-Next.js-black)](https://nextjs.org/)
+[![Zcash](https://img.shields.io/badge/Privacy-Zcash-F3B724)](https://z.cash/)
+[![NEAR](https://img.shields.io/badge/Coordination-NEAR-00C1DE)](https://near.org/)
+
+</div>
 
 ---
 
@@ -12,7 +25,7 @@ In an era where financial surveillance is ubiquitous and political repression ta
 
 1. **Payment Layer (Zcash)**: Shielded transactions where amounts, senders, and recipients are encrypted using zk-SNARKs
 2. **Coordination Layer (NEAR)**: Smart contracts that orchestrate matching and impact tracking without storing sensitive data
-3. **Identity Layer (Zero-Knowledge Proofs)**: Credibility verification without identity revelation—prove you're human, prove you're a Network School member, prove your location—without revealing *which* human, *which* cohort, or *where* exactly
+3. **Identity Layer (Zero-Knowledge Proofs)**: Credibility verification without identity revelation—prove you're human, prove you're a Network School member, prove your location—without revealing _which_ human, _which_ cohort, or _where_ exactly
 
 This isn't just privacy theater. It's a cryptographic guarantee that enables high-risk philanthropy to exist in hostile environments.
 
@@ -22,11 +35,17 @@ This isn't just privacy theater. It's a cryptographic guarantee that enables hig
 
 Privora follows a **layered architecture** where each component handles exactly one concern, allowing us to reason about privacy guarantees without hand-waving.
 
+<div align="center">
+  <img src="public/workflow.png" alt="Privora Workflow" width="90%" />
+  <p><em>Complete workflow showing the privacy-preserving donation flow from intent to impact</em></p>
+</div>
+
 ### Layer 1: Zcash Payment Layer
 
 All donations flow through **Zcash shielded addresses (Z-addresses)**. The Zcash protocol uses zk-SNARKs to encrypt transaction amounts, sender addresses, and recipient addresses on-chain. Only the parties involved can decrypt their own transactions; to external observers, the blockchain shows only encrypted blobs.
 
 **Technical Implementation:**
+
 - Integration with NEAR Intents 1Click API for ZEC transfers
 - Shielded address generation for both donors and recipients
 - Transaction quotes and status polling for asynchronous settlement
@@ -35,11 +54,13 @@ All donations flow through **Zcash shielded addresses (Z-addresses)**. The Zcash
 ### Layer 2: NEAR Coordination Layer
 
 NEAR smart contracts handle:
+
 - **Donor intent matching**: Encrypted preference signals matched against pseudonymous profiles
 - **IPFS persona indexing**: On-chain registry of IPFS CIDs (content-addressed profiles)
 - **Impact SBT minting**: FHE-enabled Soulbound Tokens that prove impact without revealing amounts
 
 **Key Contracts:**
+
 - `PersonaRegistry.sol`: Minimal on-chain index of IPFS personas (Sepolia)
 - `ImpactSBT.sol`: FHE-enabled SBT contract tracking funded builders and amounts (Sepolia)
 - `NetworkSchoolVerifier.sol`: FHE-based residency verification (Fhenix/CoFHE)
@@ -61,6 +82,7 @@ Builders prove credibility through multiple ZK proof systems:
 ## Technical Stack
 
 ### Frontend
+
 - **Framework**: Next.js 14.2.4 (App Router)
 - **React**: 18.2.0
 - **Styling**: Tailwind CSS with custom matrix theme
@@ -72,6 +94,7 @@ Builders prove credibility through multiple ZK proof systems:
 - **ZK Proofs**: Reclaim Protocol JS SDK
 
 ### Smart Contracts
+
 - **Language**: Solidity ^0.8.25
 - **Networks**:
   - Ethereum Sepolia (persona registry, impact SBTs)
@@ -82,6 +105,7 @@ Builders prove credibility through multiple ZK proof systems:
 - **Development**: Hardhat with CoFHE plugin
 
 ### Infrastructure
+
 - **IPFS**: Profile storage (Pinata/Web3.Storage compatible)
 - **NEAR AI**: PII stripping and persona matching via API proxy
 - **Zcash**: QR payment through Zashi wallet
@@ -103,6 +127,7 @@ struct Persona {
 ```
 
 **Functions:**
+
 - `registerMyPersona(string ipfsHash)`: Register your persona's IPFS hash
 - `getAllPersonas()`: Enumerate all registered personas
 - `getPersonasByOwner(address)`: Query personas by owner address
@@ -124,11 +149,13 @@ struct Impact {
 ```
 
 **Privacy Features:**
+
 - Amounts encrypted using FHE (decryptable only by donor via CoFHE)
 - No Zcash transaction IDs stored (shielded txns remain private)
 - Public mappings track funded status: `fundedBuilders[ipfsHash]`, `totalFundingAmount[ipfsHash]`
 
 **Functions:**
+
 - `mintImpact(...)`: Mint SBT with encrypted amount
 - `isBuilderFunded(string ipfsHash)`: Check if builder has been funded
 - `getTotalFundingAmount(string ipfsHash)`: Get total funding (in zatoshis)
@@ -138,6 +165,7 @@ struct Impact {
 FHE-based verification proving Network School residency without revealing cohort.
 
 **Verification Flow:**
+
 1. Builder signs message: `keccak256(contract, chainId, claimant, member, nonce)`
 2. Contract verifies signature from allowlisted member address
 3. Stores encrypted verification flag: `verifiedEnc[claimant] = FHE.asEbool(true)`
@@ -222,12 +250,14 @@ npx hardhat deploy-network-school --network sepolia
 ### For Builders (Recipients)
 
 1. **Create Profile**: Navigate to `/recipient` and fill out pseudonymous profile
+
    - Choose a pseudonym (no real names)
    - Select category and skills
    - Write bio (will be PII-stripped by NEAR AI)
    - Add funding need description
 
 2. **Attach ZK Proofs**: Verify credibility without revealing identity
+
    - GitHub contributions (via Reclaim)
    - Leetcode activity (via Reclaim)
    - Scholar profile (via Reclaim)
@@ -241,12 +271,14 @@ npx hardhat deploy-network-school --network sepolia
 ### For Patrons (Donors)
 
 1. **Set Intent**: Navigate to `/donor` and specify preferences
+
    - Topics of interest
    - Geographic focus
    - Funding amount
    - Free-form intent text (optional)
 
 2. **Find Matches**: AI matches your intent against available builders
+
    - NEAR AI analyzes profiles and returns ranked matches
    - View match scores, reasons, and verification badges
 
@@ -276,11 +308,13 @@ npx hardhat deploy-network-school --network sepolia
 ### Threat Model
 
 Privora is designed for scenarios where:
+
 - Donors need to remain anonymous (political repression, surveillance states)
 - Recipients need pseudonymity (activists, dissidents, high-risk builders)
 - Funding amounts should be private (prevent targeting based on wealth)
 
 **Not designed for:**
+
 - Regulatory compliance (no KYC/AML)
 - Tax reporting (amounts are private)
 - Public accountability (by design, transactions are private)
@@ -316,6 +350,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 ## Acknowledgments
 
 Built with:
+
 - [Zcash](https://z.cash/) for shielded transactions
 - [NEAR Protocol](https://near.org/) for coordination layer
 - [Fhenix CoFHE](https://fhenix.io/) for FHE-enabled contracts
