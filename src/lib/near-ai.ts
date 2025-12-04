@@ -12,7 +12,6 @@ export interface PIIStrippedProfile {
     skills: string[];
     bio: string;
     location: string; // Coarse location only
-    fundingNeed: string; // Sanitized funding request
     github?: string; // Anonymized if provided
     portfolio?: string; // Anonymized if provided
     verificationFlags: {
@@ -30,7 +29,6 @@ export async function stripPII(rawProfile: {
     category: string;
     skills: string[];
     bio: string;
-    fundingNeed: string;
     location: string;
     github?: string;
     portfolio?: string;
@@ -52,17 +50,16 @@ Input profile:
 - Category: ${rawProfile.category}
 - Skills: ${rawProfile.skills.join(', ')}
 - Bio: ${rawProfile.bio}
-- Funding need: ${rawProfile.fundingNeed}
 - Location: ${rawProfile.location}
 - GitHub: ${rawProfile.github || 'N/A'}
 - Portfolio: ${rawProfile.portfolio || 'N/A'}
 - Verifications: Humanness=${rawProfile.verificationFlags.humanness}, NS Resident=${rawProfile.verificationFlags.nsResident}, Location=${rawProfile.verificationFlags.location}
 
 Your task:
-1. Remove any PII from the bio and funding need (names, specific addresses, phone numbers, emails, etc.)
+1. Remove any PII from the bio (names, specific addresses, phone numbers, emails, etc.)
 2. Generalize location to coarse categories only (e.g., "High-Risk Region", "Academic Institution", "Global")
 3. If GitHub/Portfolio links contain identifying info, anonymize or remove them
-4. Keep skills, category, funding intent, and verification flags intact
+4. Keep skills, category, and verification flags intact
 5. Ensure the pseudonym is safe (no real names)
 
 Return ONLY a valid JSON object with this exact structure:
@@ -72,7 +69,6 @@ Return ONLY a valid JSON object with this exact structure:
     "skills": ["string"],
     "bio": "string (PII-free)",
     "location": "string (coarse only)",
-    "fundingNeed": "string (PII-free summary of what funds will be used for)",
     "github": "string or null",
     "portfolio": "string or null",
     "verificationFlags": {
@@ -134,6 +130,8 @@ export interface DonorIntent {
     geography: string;
     amount: string;
     recurring: boolean;
+    // Optional free-form prompt from the donor describing what they want to fund
+    intentText?: string;
 }
 
 export interface MatchedPersona {
@@ -143,7 +141,6 @@ export interface MatchedPersona {
     skills: string[];
     bio: string;
     location: string;
-    fundingNeed: string;
     matchScore: number;
     matchReason: string;
     verificationFlags: {
@@ -186,6 +183,7 @@ Donor Intent:
 - Geographic focus: ${intent.geography}
 - Funding amount: ${intent.amount} ZEC
 - Recurring: ${intent.recurring}
+${intent.intentText ? `- Donor natural-language prompt: ${intent.intentText}` : ""}
 
 Available Personas:
 ${JSON.stringify(personasSummary, null, 2)}
@@ -260,7 +258,6 @@ Include only personas with matchScore >= 50, sorted by matchScore descending.`;
                 skills: persona.profile.skills,
                 bio: persona.profile.bio,
                 location: persona.profile.location,
-                fundingNeed: persona.profile.fundingNeed,
                 matchScore: match.matchScore,
                 matchReason: match.matchReason,
                 verificationFlags: persona.profile.verificationFlags,

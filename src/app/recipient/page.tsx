@@ -5,7 +5,12 @@ import { motion } from "framer-motion";
 import { stripPII } from "@/lib/near-ai";
 import { uploadToIPFS } from "@/lib/ipfs";
 import { storePersona } from "@/lib/persona-store";
+import { registerPersonaOnChain } from "@/lib/indexRegistry";
 import { ReclaimProofRequest } from "@reclaimprotocol/js-sdk";
+import {
+  NetworkSchoolProof,
+  verifyNetworkSchoolProof,
+} from "@/lib/networkSchoolVerifier";
 
 interface RecipientProfile {
   pseudonym: string;
@@ -42,8 +47,16 @@ export default function RecipientPortal() {
   const [leetcodeProof, setLeetcodeProof] = useState<any | null>(null);
   const [scholarProof, setScholarProof] = useState<any | null>(null);
   const [locationProof, setLocationProof] = useState<any | null>(null);
+  const [networkSchoolProof, setNetworkSchoolProof] =
+    useState<NetworkSchoolProof | null>(null);
   const [sanitizedPersona, setSanitizedPersona] = useState<any | null>(null);
   const [zcashAddress, setZcashAddress] = useState<string>("");
+  const [networkSchoolLoading, setNetworkSchoolLoading] = useState(false);
+  const [networkSchoolError, setNetworkSchoolError] = useState<string | null>(
+    null
+  );
+  const [evmAddress, setEvmAddress] = useState<string | null>(null);
+  const [evmError, setEvmError] = useState<string | null>(null);
 
   const categoryOptions = [
     "Privacy Tools Developer",
@@ -167,6 +180,62 @@ export default function RecipientPortal() {
     await startReclaimSession(providerId, setLocationProof, "Location");
   };
 
+  const handleVerifyNetworkSchool = async () => {
+    try {
+      setNetworkSchoolError(null);
+      if (!evmAddress) {
+        setNetworkSchoolError(
+          "Connect an Ethereum wallet for Fhenix-based verification first."
+        );
+        return;
+      }
+      setNetworkSchoolError(null);
+      setNetworkSchoolProof(null);
+      setNetworkSchoolLoading(true);
+      const proof = await verifyNetworkSchoolProof();
+      setNetworkSchoolProof(proof);
+      setZkProofs((prev) => ({ ...prev, nsResident: true }));
+    } catch (e) {
+      console.error("Network School verification failed:", e);
+      setNetworkSchoolError(
+        e instanceof Error ? e.message : "Network School verification failed"
+      );
+    } finally {
+      setNetworkSchoolLoading(false);
+    }
+  };
+
+  const handleConnectEvmWallet = async () => {
+    if (typeof window === "undefined" || !(window as any).ethereum) {
+      setEvmError(
+        "No Ethereum wallet found. Install MetaMask, Rabby, or Talisman and refresh."
+      );
+      return;
+    }
+    setEvmError(null);
+    try {
+      const eth = (window as any).ethereum;
+      const accounts: string[] = await eth.request({
+        method: "eth_requestAccounts",
+      });
+      if (!accounts || accounts.length === 0) {
+        setEvmError(
+          "No accounts returned from wallet. Create/import an account and try again."
+        );
+        return;
+      }
+      setEvmAddress(accounts[0]);
+    } catch (err: any) {
+      if (err?.code === 4001) {
+        setEvmError("Wallet connection was rejected.");
+        return;
+      }
+      setEvmError(
+        err?.message || "Failed to connect Ethereum wallet. Please try again."
+      );
+    }
+  };
+
   const handleSanitize = async () => {
     setProcessing(true);
     setError(null);
@@ -217,13 +286,22 @@ export default function RecipientPortal() {
           leetcode: leetcodeProof,
           scholar: scholarProof,
           location: locationProof,
+          networkSchool: networkSchoolProof,
         },
         paymentAddress: zcashAddress,
       };
 
       const ipfsResult = await uploadToIPFS(finalProfile);
 
+      // Local demo index (per‑browser)
       storePersona(ipfsResult.ipfsHash, ipfsResult.ipfsUrl);
+
+      // On‑chain global index (Sepolia) – best‑effort, non‑blocking
+      try {
+        await registerPersonaOnChain(ipfsResult.ipfsHash);
+      } catch (chainErr) {
+        console.warn("Failed to register persona on‑chain index:", chainErr);
+      }
 
       setIpfsHash(ipfsResult.ipfsHash);
       setIpfsUrl(ipfsResult.ipfsUrl);
@@ -496,42 +574,35 @@ export default function RecipientPortal() {
                 Data Incinerator (NEAR AI TEE) before publishing.
               </p>
 
-              <div className="space-y-6">
-                {/* Proof of Humanness */}
-                <div className="border border-matrix-green-primary/30 rounded-lg p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-bold text-matrix-green-primary mb-2">
-                        Proof of Humanness
-                      </h3>
-                      <p className="text-gray-400 text-sm">
-                        Verify you&apos;re a unique human using zk-proofs
-                      </p>
-                    </div>
-                    <div
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                        zkProofs.humanness
-                          ? "bg-matrix-green-primary border-matrix-green-primary"
-                          : "border-matrix-green-primary/50"
-                      }`}
-                    >
-                      {zkProofs.humanness && (
-                        <span className="text-black text-sm">✓</span>
-                      )}
-                    </div>
+              {/* EVM wallet connect for Fhenix verification */}
+              <div className="mb-4 border border-matrix-green-primary/30 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h3 className="text-sm font-semibold text-matrix-green-primary">
+                      Connect Ethereum wallet (Sepolia)
+                    </h3>
+                    <p className="text-xs text-gray-400">
+                      Required once for Fhenix-based Network School verification.
+                    </p>
                   </div>
-                  <button
-                    onClick={() =>
-                      setZkProofs({ ...zkProofs, humanness: true })
-                    }
-                    className="btn-outline text-sm w-full"
-                  >
-                    {zkProofs.humanness
-                      ? "Verified ✓"
-                      : "Verify with zk-Passport"}
-                  </button>
+                  {evmAddress && (
+                    <span className="text-[10px] text-matrix-green-primary font-mono">
+                      {evmAddress.slice(0, 6)}…{evmAddress.slice(-4)}
+                    </span>
+                  )}
                 </div>
+                {evmError && (
+                  <p className="text-[11px] text-red-400 mb-2">{evmError}</p>
+                )}
+                <button
+                  onClick={handleConnectEvmWallet}
+                  className="btn-outline text-xs w-full"
+                >
+                  {evmAddress ? "Reconnect Ethereum wallet" : "Connect Ethereum wallet"}
+                </button>
+              </div>
 
+              <div className="space-y-6">
                 {/* Network School Resident */}
                 <div className="border border-matrix-green-primary/30 rounded-lg p-6">
                   <div className="flex items-start justify-between mb-4">
@@ -556,13 +627,70 @@ export default function RecipientPortal() {
                     </div>
                   </div>
                   <button
-                    onClick={() =>
-                      setZkProofs({ ...zkProofs, nsResident: true })
-                    }
-                    className="btn-outline text-sm w-full"
+                    onClick={handleVerifyNetworkSchool}
+                    disabled={networkSchoolLoading}
+                    className="btn-outline text-sm w-full disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {zkProofs.nsResident ? "Verified ✓" : "Verify NS Residency"}
+                    {networkSchoolLoading
+                      ? "Verifying..."
+                      : zkProofs.nsResident
+                      ? "Network School Verified ✓"
+                      : "Verify via Network School"}
                   </button>
+                  {networkSchoolError && (
+                    <p className="text-xs text-red-400 mt-2">{networkSchoolError}</p>
+                  )}
+                  {networkSchoolProof && (
+                    <p className="text-[11px] text-gray-500 mt-2 break-all">
+                      Proof tx: {networkSchoolProof.txHash}
+                    </p>
+                  )}
+                </div>
+
+                {/* Other startup society proofs (coming soon) */}
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="border border-matrix-green-primary/20 rounded-lg p-4 opacity-60">
+                    <h4 className="text-sm font-semibold text-matrix-green-primary mb-1">
+                      YC / YC School
+                    </h4>
+                    <p className="text-xs text-gray-400 mb-3">
+                      Prove YC affiliation without revealing your batch.
+                    </p>
+                    <button
+                      disabled
+                      className="btn-outline text-xs w-full disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Proof coming soon
+                    </button>
+                  </div>
+                  <div className="border border-matrix-green-primary/20 rounded-lg p-4 opacity-60">
+                    <h4 className="text-sm font-semibold text-matrix-green-primary mb-1">
+                      Antler Founder
+                    </h4>
+                    <p className="text-xs text-gray-400 mb-3">
+                      ZK-proof of Antler residency without doxxing your cohort.
+                    </p>
+                    <button
+                      disabled
+                      className="btn-outline text-xs w-full disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Proof coming soon
+                    </button>
+                  </div>
+                  <div className="border border-matrix-green-primary/20 rounded-lg p-4 opacity-60">
+                    <h4 className="text-sm font-semibold text-matrix-green-primary mb-1">
+                      The Residency
+                    </h4>
+                    <p className="text-xs text-gray-400 mb-3">
+                      ZK attestation of Residency participation.
+                    </p>
+                    <button
+                      disabled
+                      className="btn-outline text-xs w-full disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Proof coming soon
+                    </button>
+                  </div>
                 </div>
 
                 {/* Location Proof */}

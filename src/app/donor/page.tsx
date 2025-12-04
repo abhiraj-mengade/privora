@@ -6,6 +6,8 @@ import MatrixRain from "@/components/MatrixRain";
 import { findMatchingPersonas, type MatchedPersona } from "@/lib/near-ai";
 import { retrieveFromIPFS } from "@/lib/ipfs";
 import { getStoredPersonas } from "@/lib/persona-store";
+import { fetchAllIndexedPersonas } from "@/lib/indexRegistry";
+import { verifyProof } from "@reclaimprotocol/js-sdk";
 import {
   sendShieldedTransaction,
   getRecipientShieldedAddress,
@@ -15,12 +17,18 @@ import {
   type ZcashTransactionResult,
 } from "@/lib/zcash";
 import { issueImpactSBT } from "@/lib/sbt";
+import {
+  loadFundingStats,
+  recordFunding,
+  type FundingMap,
+} from "@/lib/fundingStats";
 
 interface DonorPreferences {
   topics: string[];
   geography: string;
   amount: string;
   recurring: boolean;
+  intentText: string;
 }
 
 export default function DonorPortal() {
@@ -30,6 +38,7 @@ export default function DonorPortal() {
     geography: "global",
     amount: "",
     recurring: false,
+    intentText: "",
   });
 
   const [matches, setMatches] = useState<MatchedPersona[]>([]);
@@ -44,6 +53,22 @@ export default function DonorPortal() {
     Record<string, ZcashTransactionResult>
   >({});
 
+  // Per-recipient verified proof status, keyed by ipfsHash
+  const [verifiedProofs, setVerifiedProofs] = useState<
+    Record<
+      string,
+      {
+        github?: boolean;
+        leetcode?: boolean;
+        scholar?: boolean;
+        location?: boolean;
+      }
+    >
+  >({});
+
+  // Local funding stats per recipient (demo only, not on-chain)
+  const [funding, setFunding] = useState<FundingMap>({});
+
   // Direct funding modal state (from "Browse all recipients" section)
   const [directOpen, setDirectOpen] = useState(false);
   const [directProfile, setDirectProfile] = useState<{
@@ -56,6 +81,9 @@ export default function DonorPortal() {
   const [directLoading, setDirectLoading] = useState(false);
   const [directTxId, setDirectTxId] = useState<string | null>(null);
   const [directSbtId, setDirectSbtId] = useState<string | null>(null);
+
+  // Browse all recipients filters
+  const [filterStartupSociety, setFilterStartupSociety] = useState(false);
 
   const topicOptions = [
     "Zero-Knowledge Proofs",
@@ -85,19 +113,33 @@ export default function DonorPortal() {
   useEffect(() => {
     const loadAllProfiles = async () => {
       try {
-        const storedPersonas = getStoredPersonas();
-        if (!storedPersonas.length) return;
+        // 1) Try global on‑chain index on Sepolia
+        let hashes: string[] = [];
+        try {
+          const indexed = await fetchAllIndexedPersonas();
+          hashes = indexed.map((p) => p.ipfsHash);
+        } catch (chainErr) {
+          console.warn("Failed to read on‑chain persona index, falling back to local:", chainErr);
+        }
+
+        // 2) Fallback to local per‑browser index if nothing on‑chain
+        if (!hashes.length) {
+          const storedPersonas = getStoredPersonas();
+          hashes = storedPersonas.map((s) => s.ipfsHash);
+        }
+
+        if (!hashes.length) return;
 
         const personasWithData = await Promise.all(
-          storedPersonas.map(async (stored) => {
+          hashes.map(async (ipfsHash) => {
             try {
-              const profile = await retrieveFromIPFS(stored.ipfsHash);
+              const profile = await retrieveFromIPFS(ipfsHash);
               return {
-                ipfsHash: stored.ipfsHash,
+                ipfsHash,
                 profile: profile as any,
               };
             } catch (err) {
-              console.error(`Failed to load persona ${stored.ipfsHash}:`, err);
+              console.error(`Failed to load persona ${ipfsHash}:`, err);
               return null;
             }
           })
@@ -107,6 +149,60 @@ export default function DonorPortal() {
           (p) => p !== null
         ) as Array<{ ipfsHash: string; profile: any }>;
         setAllProfiles(valid);
+        setFunding(loadFundingStats());
+
+        // Kick off async verification of Reclaim proofs for each profile
+        void (async () => {
+          const next: typeof verifiedProofs = {};
+          for (const { ipfsHash, profile } of valid) {
+            const proofs = profile.proofs ?? {};
+            const status: {
+              github?: boolean;
+              leetcode?: boolean;
+              scholar?: boolean;
+              location?: boolean;
+            } = {};
+
+            try {
+              if (proofs.github) {
+                status.github = await verifyProof(proofs.github);
+              }
+            } catch (e) {
+              console.warn("GitHub proof verification failed", e);
+              status.github = false;
+            }
+
+            try {
+              if (proofs.leetcode) {
+                status.leetcode = await verifyProof(proofs.leetcode);
+              }
+            } catch (e) {
+              console.warn("Leetcode proof verification failed", e);
+              status.leetcode = false;
+            }
+
+            try {
+              if (proofs.scholar) {
+                status.scholar = await verifyProof(proofs.scholar);
+              }
+            } catch (e) {
+              console.warn("Scholar proof verification failed", e);
+              status.scholar = false;
+            }
+
+            try {
+              if (proofs.location) {
+                status.location = await verifyProof(proofs.location);
+              }
+            } catch (e) {
+              console.warn("Location proof verification failed", e);
+              status.location = false;
+            }
+
+            next[ipfsHash] = status;
+          }
+          setVerifiedProofs(next);
+        })();
       } catch (err) {
         console.error("Error loading all profiles:", err);
       }
@@ -177,6 +273,10 @@ export default function DonorPortal() {
       } catch (err) {
         console.error("Failed to mint SBT for direct donation:", err);
       }
+      // Record funding locally
+      setFunding((prev) =>
+        recordFunding(directProfile.ipfsHash, amount, txId, "direct")
+      );
     } catch (err) {
       console.error("Error sending direct donation:", err);
       setDirectError(
@@ -192,10 +292,21 @@ export default function DonorPortal() {
     setError(null);
 
     try {
-      // Step 1: Load all available personas from storage
-      const storedPersonas = getStoredPersonas();
+      // Step 1: Load all available personas (prefer on‑chain index)
+      let hashes: string[] = [];
+      try {
+        const indexed = await fetchAllIndexedPersonas();
+        hashes = indexed.map((p) => p.ipfsHash);
+      } catch (chainErr) {
+        console.warn("Failed to read on‑chain persona index, falling back to local:", chainErr);
+      }
 
-      if (storedPersonas.length === 0) {
+      if (!hashes.length) {
+        const storedPersonas = getStoredPersonas();
+        hashes = storedPersonas.map((s) => s.ipfsHash);
+      }
+
+      if (!hashes.length) {
         setError(
           "No recipients available yet. Please wait for recipients to register."
         );
@@ -205,15 +316,15 @@ export default function DonorPortal() {
 
       // Step 2: Retrieve persona data from IPFS
       const personasWithData = await Promise.all(
-        storedPersonas.map(async (stored) => {
+        hashes.map(async (ipfsHash) => {
           try {
-            const profile = await retrieveFromIPFS(stored.ipfsHash);
+            const profile = await retrieveFromIPFS(ipfsHash);
             return {
-              ipfsHash: stored.ipfsHash,
+              ipfsHash,
               profile: profile as any,
             };
           } catch (err) {
-            console.error(`Failed to load persona ${stored.ipfsHash}:`, err);
+            console.error(`Failed to load persona ${ipfsHash}:`, err);
             return null;
           }
         })
@@ -322,6 +433,15 @@ export default function DonorPortal() {
           delete updated[match.ipfsHash];
           return updated;
         });
+        // Record funding locally for this recipient
+        setFunding((prev) =>
+          recordFunding(
+            match.ipfsHash,
+            parseFloat(preferences.amount),
+            status.txId || "",
+            "ai"
+          )
+        );
         setSendingDonation(null);
       }
     } catch (err) {
@@ -458,6 +578,24 @@ export default function DonorPortal() {
                   </label>
                 </div>
 
+                {/* Free-form intent prompt */}
+                <div className="mb-8">
+                  <label className="block text-matrix-green-primary font-semibold mb-3">
+                    Describe your intent (optional)
+                  </label>
+                  <textarea
+                    value={preferences.intentText}
+                    onChange={(e) =>
+                      setPreferences({
+                        ...preferences,
+                        intentText: e.target.value,
+                      })
+                    }
+                    placeholder='e.g. "Fund privacy tools for activists in high-risk regions"'
+                    className="input-field min-h-24 resize-none"
+                  />
+                </div>
+
                 {/* Submit */}
                 {error && (
                   <div className="mb-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
@@ -491,13 +629,40 @@ export default function DonorPortal() {
                 transition={{ delay: 0.25 }}
                 className="glass-card p-6 md:p-7 border border-matrix-green-primary/20 max-h-[560px] overflow-y-auto"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg md:text-xl font-semibold text-matrix-green-primary">
-                    Browse all recipients
-                  </h3>
-                  <span className="text-xs text-gray-500 font-mono">
-                    {allProfiles.length} profiles
-                  </span>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-lg md:text-xl font-semibold text-matrix-green-primary">
+                      Browse all recipients
+                    </h3>
+                    <div className="flex items-center gap-3 mt-1">
+                      <label className="flex items-center gap-1.5 text-[11px] text-gray-400 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filterStartupSociety}
+                          onChange={(e) =>
+                            setFilterStartupSociety(e.target.checked)
+                          }
+                          className="w-3.5 h-3.5 accent-matrix-green-primary"
+                        />
+                        <span>Show only startup society (Network School) members</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-xs text-gray-500 font-mono">
+                      {allProfiles.length} profiles
+                    </span>
+                    {filterStartupSociety && (
+                      <span className="block text-[10px] text-matrix-green-primary/80 font-mono">
+                        NS members:{" "}
+                        {
+                          allProfiles.filter(
+                            (p) => p.profile?.proofs?.networkSchool
+                          ).length
+                        }
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {allProfiles.length === 0 ? (
                   <p className="text-xs text-gray-500">
@@ -506,11 +671,18 @@ export default function DonorPortal() {
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {allProfiles.map((entry) => {
+                    {allProfiles
+                      .filter((entry) =>
+                        filterStartupSociety
+                          ? entry.profile?.proofs?.networkSchool
+                          : true
+                      )
+                      .map((entry) => {
                       const { ipfsHash, profile } = entry;
                       const persona = profile.persona ?? {};
                       const skills: string[] = persona.skills ?? [];
                       const proofs = profile.proofs ?? {};
+                      const stats = funding[ipfsHash];
                       return (
                         <div
                           key={ipfsHash}
@@ -529,7 +701,7 @@ export default function DonorPortal() {
                               {ipfsHash}
                             </span>
                           </div>
-                          {/* ZK verification badges from Reclaim proofs */}
+                          {/* ZK verification badges from Reclaim proofs + Network School */}
                           <div className="flex flex-wrap gap-1 mb-2">
                             {proofs.github && (
                               <span className="px-2 py-0.5 rounded-full border border-matrix-green-primary/40 text-[10px] text-matrix-green-primary bg-matrix-green-subtle/20">
@@ -551,10 +723,16 @@ export default function DonorPortal() {
                                 Location zk-verified
                               </span>
                             )}
+                            {proofs.networkSchool && (
+                              <span className="px-2 py-0.5 rounded-full border border-matrix-green-primary/40 text-[10px] text-matrix-green-primary bg-matrix-green-subtle/20">
+                                Network School verified
+                              </span>
+                            )}
                             {!proofs.github &&
                               !proofs.leetcode &&
                               !proofs.scholar &&
-                              !proofs.location && (
+                          !proofs.location &&
+                          !proofs.networkSchool && (
                                 <span className="text-[10px] text-gray-500">
                                   No zk-proofs attached yet
                                 </span>
@@ -571,6 +749,23 @@ export default function DonorPortal() {
                                 Funding need:
                               </span>{" "}
                               {persona.fundingNeed}
+                            </p>
+                          )}
+                          {persona.fundingNeed && (
+                            <p className="text-[11px] text-gray-400 mb-1 line-clamp-2">
+                              <span className="text-matrix-green-primary">
+                                Funding need:
+                              </span>{" "}
+                              {persona.fundingNeed}
+                            </p>
+                          )}
+                          {stats && stats.totalZec > 0 && (
+                            <p className="text-[11px] text-matrix-green-primary/80 mb-2">
+                              Funded via Privora:{" "}
+                              <span className="font-mono">
+                                {stats.totalZec.toFixed(4)} ZEC
+                              </span>{" "}
+                              ({stats.txs.length} grants)
                             </p>
                           )}
                           {skills.length > 0 && (
@@ -600,7 +795,7 @@ export default function DonorPortal() {
                           </div>
                         </div>
                       );
-                    })}
+                      })}
                   </div>
                 )}
               </motion.div>
