@@ -65,7 +65,7 @@ Builders prove credibility through multiple ZK proof systems:
 - **React**: 18.2.0
 - **Styling**: Tailwind CSS with custom matrix theme
 - **Animations**: Framer Motion
-- **Wallet Integration**: 
+- **Wallet Integration**:
   - Thirdweb SDK (`@thirdweb-dev/react`) for EVM wallet connection (MetaMask, Rabby, Talisman, etc.)
   - Ethers.js v5.8.0 for contract interactions
 - **State Management**: React Query (TanStack Query v4)
@@ -73,7 +73,7 @@ Builders prove credibility through multiple ZK proof systems:
 
 ### Smart Contracts
 - **Language**: Solidity ^0.8.25
-- **Networks**: 
+- **Networks**:
   - Ethereum Sepolia (persona registry, impact SBTs)
   - Fhenix (FHE-enabled Network School verification)
 - **Libraries**:
@@ -84,7 +84,7 @@ Builders prove credibility through multiple ZK proof systems:
 ### Infrastructure
 - **IPFS**: Profile storage (Pinata/Web3.Storage compatible)
 - **NEAR AI**: PII stripping and persona matching via API proxy
-- **Zcash**: NEAR Intents 1Click API integration
+- **Zcash**: QR payment through Zashi wallet
 
 ---
 
