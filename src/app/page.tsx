@@ -154,22 +154,22 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-6 md:gap-8">
             {[
               {
-                title: "Zcash shielded set",
+                title: "Zcash shielded payments",
                 description:
-                  "Donations flow through Z-addresses. Amounts, senders, and recipients stay encrypted while still being auditable by the parties involved.",
+                  "Donations flow through Z-addresses (shielded addresses). Transaction amounts, senders, and recipients remain encrypted on-chain using zk-SNARKs. Only the parties involved can decrypt their own transactions.",
                 tech: "zk-SNARKs",
               },
               {
-                title: "NEAR coordination",
+                title: "Ethereum Sepolia coordination",
                 description:
-                  "Smart contracts orchestrate intents, matches, and impact SBTs—only hashes and flags on-chain, never raw profiles or preferences.",
-                tech: "Rust · WASM",
+                  "Smart contracts on Sepolia handle IPFS persona indexing and FHE-enabled impact SBTs. Only IPFS hashes, funding counts, and encrypted amounts are stored on-chain—never raw profiles or payment details.",
+                tech: "Solidity · FHE",
               },
               {
-                title: "Zero-knowledge proofs",
+                title: "FHE-enabled verification",
                 description:
-                  "Recipients prove humanness, cohorts, or residency via circuits like Semaphore: “member of set X” without revealing which member.",
-                tech: "ZK Circuits",
+                  "Builders prove Network School residency and other credentials using FHE (Fully Homomorphic Encryption) on Fhenix. Verification status is encrypted and only decryptable by the claimant via CoFHE.",
+                tech: "FHE · CoFHE",
               },
             ].map((item, idx) => (
               <div

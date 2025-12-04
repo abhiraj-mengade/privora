@@ -319,7 +319,7 @@ export default function PatronPortal() {
   const handleMintDirectSbt = async () => {
     if (!directProfile) return;
     if (!thirdwebSigner || !thirdwebAddress) {
-      setDirectError("Please connect your EVM wallet to mint an impact SBT");
+      setDirectError("Please connect your wallet to mint an impact SBT");
       return;
     }
     setDirectLoading(true);
@@ -901,7 +901,7 @@ export default function PatronPortal() {
                               {funded?.funded && (
                                 <span className="px-2 py-0.5 rounded-full border border-yellow-400/60 text-[10px] text-yellow-400 bg-yellow-400/10">
                                   ✓ Funded ({funded.count}x) •{" "}
-                                  {formatZEC(funded.totalAmountZats / 1e8)} ZEC
+                                  {formatZEC(funded.totalAmountZats / 1e8)}
                                 </span>
                               )}
                             </div>
@@ -1295,11 +1295,12 @@ export default function PatronPortal() {
             {!thirdwebAddress && (
               <div className="mb-4 p-4 rounded border border-matrix-green-primary/40 bg-black/40">
                 <p className="text-xs text-gray-400 mb-3">
-                  Connect your EVM wallet (Sepolia) to mint an impact SBT after
-                  funding this builder.
+                  Connect your wallet to mint an FHE-enabled impact SBT on Fhenix
+                  after funding this builder. Amounts are encrypted using fully
+                  homomorphic encryption.
                 </p>
                 <div className="flex justify-center">
-                  <ConnectWallet theme="dark" btnTitle="Connect EVM wallet" />
+                  <ConnectWallet theme="dark" btnTitle="Connect wallet" />
                 </div>
               </div>
             )}
@@ -1316,7 +1317,7 @@ export default function PatronPortal() {
             )}
             {directSbtId && (
               <div className="mb-3 p-3 rounded border border-matrix-green-primary/40 bg-black/30 text-[11px] text-matrix-green-primary">
-                Impact SBT minted on Sepolia: {directSbtId}
+                Impact SBT minted (FHE-enabled): {directSbtId}
               </div>
             )}
             <div className="flex gap-3 mt-4">

@@ -221,7 +221,7 @@ export default function BuilderPortal() {
     // With Thirdweb ConnectWallet, clicking this button is just a hint.
     // The real connection happens via the Thirdweb modal.
     if (!thirdwebAddress) {
-      setEvmError("Use the Connect Wallet button below to link an EVM wallet.");
+      setEvmError("Use the Connect Wallet button below to link your wallet.");
     } else {
       setEvmError(null);
     }
@@ -291,7 +291,7 @@ export default function BuilderPortal() {
           await registerPersonaOnChain(ipfsResult.ipfsHash, thirdwebSigner);
         } else {
           console.warn(
-            "No EVM wallet connected; persona stored locally but not indexed on‑chain"
+            "No wallet connected; persona stored locally but not indexed on‑chain"
           );
         }
       } catch (chainErr) {
@@ -540,16 +540,16 @@ export default function BuilderPortal() {
                 Data Incinerator (NEAR AI TEE) before publishing.
               </p>
 
-              {/* EVM wallet connect for Fhenix verification */}
+              {/* Wallet connect for Fhenix FHE verification */}
               <div className="mb-4 border border-matrix-green-primary/30 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <h3 className="text-sm font-semibold text-matrix-green-primary">
-                      Connect Ethereum wallet (Sepolia)
+                      Connect wallet for FHE verification
                     </h3>
                     <p className="text-xs text-gray-400">
-                      Required once for Fhenix-based Network School
-                      verification.
+                      Required for Fhenix-based Network School verification using
+                      fully homomorphic encryption.
                     </p>
                   </div>
                   {evmAddress && (
@@ -566,14 +566,14 @@ export default function BuilderPortal() {
                     <ConnectWallet
                       theme="dark"
                       btnTitle={
-                        evmAddress ? "Connected wallet" : "Connect EVM wallet"
+                        evmAddress ? "Connected wallet" : "Connect wallet"
                       }
                     />
                   </div>
                   {!evmAddress && (
                     <p className="text-[11px] text-gray-500 text-center">
-                      Connect any EVM wallet (MetaMask, Rabby, Talisman, etc.)
-                      on Sepolia.
+                      Connect any wallet (MetaMask, Rabby, Talisman, etc.) for
+                      Fhenix FHE verification.
                     </p>
                   )}
                 </div>
