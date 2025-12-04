@@ -43,6 +43,11 @@ contract ImpactSBT is Ownable {
     // Each address can hold multiple SBTs; we only track balance for UX.
     mapping(address => uint256[]) private _tokensOf;
 
+    // Track funded builders by IPFS hash (to prevent duplicate funding)
+    mapping(string => bool) public fundedBuilders; // IPFS hash => funded status
+    mapping(string => uint256) public fundingCount; // IPFS hash => number of times funded
+    mapping(string => uint256) public totalFundingAmount; // IPFS hash => total funding amount in zatoshis
+
     event ImpactMinted(
         uint256 indexed tokenId,
         address indexed donor,
@@ -72,13 +77,15 @@ contract ImpactSBT is Ownable {
      * @param causeTag High-level cause tag (e.g., "anti-censorship tools")
      * @param memo Optional memo text (high-level only, no payment details)
      * @param amountZats Plain amount in zatoshis (uint128) - will be encrypted
+     * @param ipfsHash IPFS hash of the builder's profile (for tracking funded status)
      */
     function mintImpact(
         address donor,
         string calldata builderPseudonym,
         string calldata causeTag,
         string calldata memo,
-        uint128 amountZats
+        uint128 amountZats,
+        string calldata ipfsHash
     ) external returns (uint256 tokenId) {
         require(donor != address(0), "ImpactSBT: zero donor");
 
@@ -97,6 +104,13 @@ contract ImpactSBT is Ownable {
         imp.verifiedEnc = encVerified;
 
         _tokensOf[donor].push(tokenId);
+
+        // Mark builder as funded (track by IPFS hash)
+        if (bytes(ipfsHash).length > 0) {
+            fundedBuilders[ipfsHash] = true;
+            fundingCount[ipfsHash]++;
+            totalFundingAmount[ipfsHash] += amountZats;
+        }
 
         // allow donor to decrypt their own encrypted fields via cofhejs
         FHE.allowSender(imp.amountEnc);
@@ -142,6 +156,21 @@ contract ImpactSBT is Ownable {
     /// @notice Number of SBTs held by `owner`.
     function balanceOf(address ownerAddr) external view returns (uint256) {
         return _tokensOf[ownerAddr].length;
+    }
+
+    /// @notice Check if a builder (by IPFS hash) has been funded.
+    function isBuilderFunded(string calldata ipfsHash) external view returns (bool) {
+        return fundedBuilders[ipfsHash];
+    }
+
+    /// @notice Get the number of times a builder has been funded.
+    function getFundingCount(string calldata ipfsHash) external view returns (uint256) {
+        return fundingCount[ipfsHash];
+    }
+
+    /// @notice Get the total funding amount for a builder (in zatoshis).
+    function getTotalFundingAmount(string calldata ipfsHash) external view returns (uint256) {
+        return totalFundingAmount[ipfsHash];
     }
 
     /// @notice Soulbound: no transfers allowed.
