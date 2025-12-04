@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import WalletConnect from "@/components/WalletConnect";
 
 export default function Header() {
   const pathname = usePathname();
@@ -115,9 +114,6 @@ export default function Header() {
 
         {/* Right: Wallet + Mobile Toggle */}
         <div className="flex items-center gap-3 md:gap-4">
-          <div className="hidden sm:block">
-            <WalletConnect />
-          </div>
           <motion.button
             type="button"
             aria-label="Toggle navigation menu"
@@ -171,10 +167,6 @@ export default function Header() {
                   </div>
                 </Link>
               ))}
-
-              <div className="pt-2 px-4">
-                <WalletConnect />
-              </div>
             </div>
           </motion.div>
         )}
