@@ -48,19 +48,39 @@ export default function Hero() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center"
           >
-            <Link href="/donor" className="w-full sm:w-auto">
-              <button className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2">
-                Start giving
-                <span className="text-xs font-mono text-black/70">
-                  ZEC → SBT
-                </span>
-              </button>
-            </Link>
-            <Link href="/recipient" className="w-full sm:w-auto">
-              <button className="btn-outline w-full sm:w-auto">
-                Apply as builder
-              </button>
-            </Link>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full sm:w-auto"
+            >
+              <Link href="/donor" className="w-full sm:w-auto group">
+                <button className="relative w-full sm:w-auto overflow-hidden bg-gradient-matrix text-black font-semibold px-8 py-3.5 rounded-lg transition-all duration-300 hover:shadow-[0_0_25px_rgba(0,255,65,0.5)] border-2 border-matrix-green-primary/50">
+                  <span className="absolute inset-0 bg-matrix-green-primary opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+                  <span className="relative flex items-center justify-center gap-2">
+                    <span className="text-sm tracking-wide">START GIVING</span>
+                    <span className="text-xs font-mono opacity-70 border-l border-black/30 pl-2">
+                      ZEC → SBT
+                    </span>
+                  </span>
+                </button>
+              </Link>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full sm:w-auto"
+            >
+              <Link href="/recipient" className="w-full sm:w-auto group">
+                <button className="relative w-full sm:w-auto overflow-hidden bg-black/60 backdrop-blur-sm text-matrix-green-primary font-semibold px-8 py-3.5 rounded-lg border-2 border-matrix-green-primary/40 transition-all duration-300 hover:bg-matrix-green-primary/10 hover:border-matrix-green-primary hover:shadow-[0_0_25px_rgba(0,255,65,0.3)]">
+                  <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-matrix-green-primary/20 to-transparent animate-shimmer" />
+                  </span>
+                  <span className="relative text-sm tracking-wide">
+                    APPLY AS BUILDER
+                  </span>
+                </button>
+              </Link>
+            </motion.div>
           </motion.div>
 
           {/* Right rail: system snapshot */}
