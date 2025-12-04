@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 export default function AboutPage() {
   return (
     <main className="relative min-h-screen">
-
       <div className="pt-32 pb-20 section-padding">
         <div className="container-max max-w-5xl">
           <motion.div
@@ -69,11 +68,10 @@ export default function AboutPage() {
                   3 · Zero-knowledge proofs
                 </h3>
                 <p className="text-gray-400">
-                  Builders prove credentials (humanness, location,
-                  affiliations) without revealing their identity. Using
-                  Semaphore-style circuits, they can demonstrate &quot;I am a
-                  verified member of group X&quot; without revealing which
-                  member.
+                  Builders prove credentials (humanness, location, affiliations)
+                  without revealing their identity. Using Semaphore-style
+                  circuits, they can demonstrate &quot;I am a verified member of
+                  group X&quot; without revealing which member.
                 </p>
               </div>
 

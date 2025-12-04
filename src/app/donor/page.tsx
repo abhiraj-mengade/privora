@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { QRCode } from "react-qrcode-logo";
 import MatrixRain from "@/components/MatrixRain";
 import { findMatchingPersonas, type MatchedPersona } from "@/lib/near-ai";
 import { retrieveFromIPFS } from "@/lib/ipfs";
@@ -25,22 +26,22 @@ import {
 import { useSigner, useAddress, ConnectWallet } from "@thirdweb-dev/react";
 
 interface DonorPreferences {
-    topics: string[];
-    geography: string;
-    amount: string;
-    recurring: boolean;
+  topics: string[];
+  geography: string;
+  amount: string;
+  recurring: boolean;
   intentText: string;
 }
 
 export default function PatronPortal() {
-    const [step, setStep] = useState(1);
-    const [preferences, setPreferences] = useState<DonorPreferences>({
-        topics: [],
+  const [step, setStep] = useState(1);
+  const [preferences, setPreferences] = useState<DonorPreferences>({
+    topics: [],
     geography: "global",
     amount: "",
-        recurring: false,
+    recurring: false,
     intentText: "",
-    });
+  });
 
   const [matches, setMatches] = useState<MatchedPersona[]>([]);
   const [allProfiles, setAllProfiles] = useState<
@@ -58,7 +59,7 @@ export default function PatronPortal() {
   const [verifiedProofs, setVerifiedProofs] = useState<
     Record<
       string,
-        {
+      {
         github?: boolean;
         leetcode?: boolean;
         scholar?: boolean;
@@ -69,7 +70,7 @@ export default function PatronPortal() {
 
   // Local funding stats per recipient (demo only, not on-chain)
   const [funding, setFunding] = useState<FundingMap>({});
-  
+
   // On-chain funded status per builder (keyed by IPFS hash)
   const [fundedStatus, setFundedStatus] = useState<
     Record<string, { funded: boolean; count: number; totalAmountZats: number }>
@@ -89,7 +90,11 @@ export default function PatronPortal() {
 
   // Startup societies configuration
   const startupSocieties = [
-    { id: "networkSchool", name: "Network School", color: "text-matrix-green-primary" },
+    {
+      id: "networkSchool",
+      name: "Network School",
+      color: "text-matrix-green-primary",
+    },
     { id: "theResidency", name: "The Residency", color: "text-blue-400" },
     { id: "antlerFellow", name: "Antler Fellow", color: "text-purple-400" },
     { id: "yCombinator", name: "Y Combinator", color: "text-orange-400" },
@@ -99,7 +104,7 @@ export default function PatronPortal() {
   const thirdwebSigner = useSigner();
   const thirdwebAddress = useAddress();
 
-    const topicOptions = [
+  const topicOptions = [
     "Zero-Knowledge Proofs",
     "Privacy Technology",
     "DeFi Tooling",
@@ -107,16 +112,16 @@ export default function PatronPortal() {
     "Education",
     "Infrastructure",
     "Research",
-    ];
+  ];
 
-    const toggleTopic = (topic: string) => {
-        setPreferences((prev) => ({
-            ...prev,
-            topics: prev.topics.includes(topic)
-                ? prev.topics.filter((t) => t !== topic)
-                : [...prev.topics, topic],
-        }));
-    };
+  const toggleTopic = (topic: string) => {
+    setPreferences((prev) => ({
+      ...prev,
+      topics: prev.topics.includes(topic)
+        ? prev.topics.filter((t) => t !== topic)
+        : [...prev.topics, topic],
+    }));
+  };
 
   // Generate donor's shielded address on mount (optional, for refunds)
   useEffect(() => {
@@ -133,7 +138,10 @@ export default function PatronPortal() {
           const indexed = await fetchAllIndexedPersonas();
           hashes = indexed.map((p) => p.ipfsHash);
         } catch (chainErr) {
-          console.warn("Failed to read on‑chain persona index, falling back to local:", chainErr);
+          console.warn(
+            "Failed to read on‑chain persona index, falling back to local:",
+            chainErr
+          );
         }
 
         // 2) Fallback to local per‑browser index if nothing on‑chain
@@ -159,22 +167,33 @@ export default function PatronPortal() {
           })
         );
 
-        const valid = personasWithData.filter(
-          (p) => p !== null
-        ) as Array<{ ipfsHash: string; profile: any }>;
+        const valid = personasWithData.filter((p) => p !== null) as Array<{
+          ipfsHash: string;
+          profile: any;
+        }>;
         setAllProfiles(valid);
         setFunding(loadFundingStats());
 
         // Check on-chain funded status for each builder
         void (async () => {
-          const statusMap: Record<string, { funded: boolean; count: number; totalAmountZats: number }> = {};
+          const statusMap: Record<
+            string,
+            { funded: boolean; count: number; totalAmountZats: number }
+          > = {};
           for (const { ipfsHash } of valid) {
             try {
               const status = await checkBuilderFundedStatus(ipfsHash);
               statusMap[ipfsHash] = status;
             } catch (err) {
-              console.error(`Failed to check funded status for ${ipfsHash}:`, err);
-              statusMap[ipfsHash] = { funded: false, count: 0, totalAmountZats: 0 };
+              console.error(
+                `Failed to check funded status for ${ipfsHash}:`,
+                err
+              );
+              statusMap[ipfsHash] = {
+                funded: false,
+                count: 0,
+                totalAmountZats: 0,
+              };
             }
           }
           setFundedStatus(statusMap);
@@ -308,7 +327,9 @@ export default function PatronPortal() {
         );
         // Update on-chain funded status (refresh from chain for accurate amount)
         try {
-          const updatedStatus = await checkBuilderFundedStatus(directProfile.ipfsHash);
+          const updatedStatus = await checkBuilderFundedStatus(
+            directProfile.ipfsHash
+          );
           setFundedStatus((prev) => ({
             ...prev,
             [directProfile.ipfsHash]: updatedStatus,
@@ -341,7 +362,10 @@ export default function PatronPortal() {
         const indexed = await fetchAllIndexedPersonas();
         hashes = indexed.map((p) => p.ipfsHash);
       } catch (chainErr) {
-        console.warn("Failed to read on‑chain persona index, falling back to local:", chainErr);
+        console.warn(
+          "Failed to read on‑chain persona index, falling back to local:",
+          chainErr
+        );
       }
 
       if (!hashes.length) {
@@ -399,10 +423,13 @@ export default function PatronPortal() {
       });
 
       // Step 4: Use AI to find matches (Agentic Wallet)
-      const matched = await findMatchingPersonas(preferences, transformedPersonas);
+      const matched = await findMatchingPersonas(
+        preferences,
+        transformedPersonas
+      );
 
       setMatches(matched);
-        setStep(2);
+      setStep(2);
     } catch (err) {
       console.error("Error finding matches:", err);
       setError(err instanceof Error ? err.message : "Failed to find matches");
@@ -472,7 +499,10 @@ export default function PatronPortal() {
           const amountZec = parseFloat(preferences.amount);
           if (!isNaN(amountZec) && thirdwebSigner && thirdwebAddress) {
             // Derive causeTag from match reason or builder category
-            const causeTag = match.matchReason || match.category || "Privacy-preserving philanthropy";
+            const causeTag =
+              match.matchReason ||
+              match.category ||
+              "Privacy-preserving philanthropy";
             await issueImpactSBT(
               {
                 donorAddress: thirdwebAddress,
@@ -519,135 +549,135 @@ export default function PatronPortal() {
       console.error("Error checking quote status:", err);
       setError(err instanceof Error ? err.message : "Failed to check status");
     }
-    };
+  };
 
-    return (
-        <main className="relative min-h-screen">
-            <div className="pt-32 pb-20 section-padding">
-                <div className="container-max max-w-6xl">
-                    {/* Header */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-center mb-12"
-                    >
-                        <p className="text-xs uppercase tracking-[0.3em] text-matrix-green-primary/70 mb-3">
-                            INTERFACE · DONORS
-                        </p>
-                        <h1 className="text-3xl md:text-5xl font-semibold md:font-bold mb-4">
+  return (
+    <main className="relative min-h-screen">
+      <div className="pt-32 pb-20 section-padding">
+        <div className="container-max max-w-6xl">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-12"
+          >
+            <p className="text-xs uppercase tracking-[0.3em] text-matrix-green-primary/70 mb-3">
+              INTERFACE · DONORS
+            </p>
+            <h1 className="text-3xl md:text-5xl font-semibold md:font-bold mb-4">
               <span className="glow-text">Patron portal</span>{" "}
-                            <span className="text-white/90">for anonymous capital.</span>
-                        </h1>
-                        <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
+              <span className="text-white/90">for anonymous capital.</span>
+            </h1>
+            <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
               Express where you want your ZEC to land without ever putting your
               identity on-chain. Privora handles matching, proofs, and shielded
               settlement.
-                        </p>
-                    </motion.div>
+            </p>
+          </motion.div>
 
-                    {step === 1 ? (
+          {step === 1 ? (
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
               {/* AI intent panel */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
                 className="glass-card p-7 md:p-10 border border-matrix-green-primary/30"
-                        >
-                            <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-2">
-                                Set your preferences
-                            </h2>
-                            <p className="text-gray-400 text-xs md:text-sm mb-8">
+              >
+                <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-2">
+                  Set your preferences
+                </h2>
+                <p className="text-gray-400 text-xs md:text-sm mb-8">
                   These sliders and tags never hit a public chain—only encrypted
                   signals feed the matcher.
-                            </p>
+                </p>
 
-                            {/* Topics */}
-                            <div className="mb-8">
-                                <label className="block text-matrix-green-primary font-semibold mb-3">
-                                    Topics of interest
-                                </label>
-                                <div className="flex flex-wrap gap-2.5">
-                                    {topicOptions.map((topic) => (
-                                        <button
-                                            key={topic}
-                                            onClick={() => toggleTopic(topic)}
+                {/* Topics */}
+                <div className="mb-8">
+                  <label className="block text-matrix-green-primary font-semibold mb-3">
+                    Topics of interest
+                  </label>
+                  <div className="flex flex-wrap gap-2.5">
+                    {topicOptions.map((topic) => (
+                      <button
+                        key={topic}
+                        onClick={() => toggleTopic(topic)}
                         className={`px-3.5 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
                           preferences.topics.includes(topic)
                             ? "bg-gradient-matrix text-black"
                             : "bg-matrix-green-subtle text-matrix-green-primary border border-matrix-green-primary/30"
-                                                }`}
-                                        >
-                                            {topic}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                        }`}
+                      >
+                        {topic}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                            {/* Geography */}
-                            <div className="mb-8">
-                                <label className="block text-matrix-green-primary font-semibold mb-3">
-                                    Geographic focus
-                                </label>
-                                <select
-                                    value={preferences.geography}
-                                    onChange={(e) =>
+                {/* Geography */}
+                <div className="mb-8">
+                  <label className="block text-matrix-green-primary font-semibold mb-3">
+                    Geographic focus
+                  </label>
+                  <select
+                    value={preferences.geography}
+                    onChange={(e) =>
                       setPreferences({
                         ...preferences,
                         geography: e.target.value,
                       })
-                                    }
-                                    className="input-field"
-                                >
-                                    <option value="global">Global (Any Location)</option>
-                                    <option value="restricted">High-Risk Regions Only</option>
-                                    <option value="academic">Academic Institutions</option>
+                    }
+                    className="input-field"
+                  >
+                    <option value="global">Global (Any Location)</option>
+                    <option value="restricted">High-Risk Regions Only</option>
+                    <option value="academic">Academic Institutions</option>
                     <option value="network-school">
                       Network School Residents
                     </option>
-                                </select>
-                            </div>
+                  </select>
+                </div>
 
-                            {/* Funding Amount */}
-                            <div className="mb-8">
-                                <label className="block text-matrix-green-primary font-semibold mb-3">
-                                    Funding amount (ZEC)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={preferences.amount}
-                                    onChange={(e) =>
+                {/* Funding Amount */}
+                <div className="mb-8">
+                  <label className="block text-matrix-green-primary font-semibold mb-3">
+                    Funding amount (ZEC)
+                  </label>
+                  <input
+                    type="number"
+                    value={preferences.amount}
+                    onChange={(e) =>
                       setPreferences({
                         ...preferences,
                         amount: e.target.value,
                       })
-                                    }
-                                    placeholder="Enter amount in ZEC"
-                                    className="input-field"
-                                    min="0"
-                                    step="0.01"
-                                />
-                            </div>
+                    }
+                    placeholder="Enter amount in ZEC"
+                    className="input-field"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
 
-                            {/* Recurring */}
-                            <div className="mb-8">
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={preferences.recurring}
-                                        onChange={(e) =>
+                {/* Recurring */}
+                <div className="mb-8">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={preferences.recurring}
+                      onChange={(e) =>
                         setPreferences({
                           ...preferences,
                           recurring: e.target.checked,
                         })
-                                        }
-                                        className="w-5 h-5 accent-matrix-green-primary"
-                                    />
+                      }
+                      className="w-5 h-5 accent-matrix-green-primary"
+                    />
                     <span className="text-gray-300">
                       Make this a recurring donation
                     </span>
-                                </label>
-                            </div>
+                  </label>
+                </div>
 
                 {/* Free-form intent prompt */}
                 <div className="mb-8">
@@ -665,9 +695,9 @@ export default function PatronPortal() {
                     placeholder='e.g. "Fund privacy tools for activists in high-risk regions"'
                     className="input-field min-h-24 resize-none"
                   />
-                            </div>
+                </div>
 
-                            {/* Submit */}
+                {/* Submit */}
                 {error && (
                   <div className="mb-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
                     <p className="text-red-400 text-sm">{error}</p>
@@ -743,7 +773,8 @@ export default function PatronPortal() {
                               </div>
                               {funded?.funded && (
                                 <span className="px-2 py-0.5 rounded-full border border-yellow-400/60 text-[10px] text-yellow-400 bg-yellow-400/10">
-                                  ✓ Funded ({funded.count}x) • {formatZEC(funded.totalAmountZats / 1e8)} ZEC
+                                  ✓ Funded ({funded.count}x) •{" "}
+                                  {formatZEC(funded.totalAmountZats / 1e8)} ZEC
                                 </span>
                               )}
                             </div>
@@ -781,8 +812,8 @@ export default function PatronPortal() {
                             {!proofs.github &&
                               !proofs.leetcode &&
                               !proofs.scholar &&
-                          !proofs.location &&
-                          !proofs.networkSchool && (
+                              !proofs.location &&
+                              !proofs.networkSchool && (
                                 <span className="text-[10px] text-gray-500">
                                   No zk-proofs attached yet
                                 </span>
@@ -803,12 +834,15 @@ export default function PatronPortal() {
                           )}
                           {funded?.funded && (
                             <p className="text-[11px] text-matrix-green-primary/80 mb-2">
-                              <span className="text-yellow-400">Total funding received:</span>{" "}
+                              <span className="text-yellow-400">
+                                Total funding received:
+                              </span>{" "}
                               <span className="font-mono text-matrix-green-primary">
                                 {formatZEC(funded.totalAmountZats / 1e8)}
                               </span>{" "}
                               <span className="text-gray-500">
-                                ({funded.count} {funded.count === 1 ? 'grant' : 'grants'})
+                                ({funded.count}{" "}
+                                {funded.count === 1 ? "grant" : "grants"})
                               </span>
                             </p>
                           )}
@@ -848,10 +882,10 @@ export default function PatronPortal() {
                           </div>
                         </div>
                       );
-                      })}
+                    })}
                   </div>
                 )}
-                        </motion.div>
+              </motion.div>
 
               {/* Startup Societies Section */}
               <motion.div
@@ -912,7 +946,11 @@ export default function PatronPortal() {
                                       </p>
                                       {funded?.funded && (
                                         <span className="text-[9px] text-yellow-400">
-                                          ✓ {formatZEC(funded.totalAmountZats / 1e8)} ({funded.count})
+                                          ✓{" "}
+                                          {formatZEC(
+                                            funded.totalAmountZats / 1e8
+                                          )}{" "}
+                                          ({funded.count})
                                         </span>
                                       )}
                                     </div>
@@ -940,21 +978,21 @@ export default function PatronPortal() {
                 </div>
               </motion.div>
             </div>
-                    ) : (
-                        /* Step 2: Matched Recipients */
-                        <div>
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="mb-8 flex justify-between items-center"
-                            >
-                                <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary">
-                                    Matched recipients ({matches.length})
-                                </h2>
-                                <button onClick={() => setStep(1)} className="btn-outline">
-                                    ← Adjust Preferences
-                                </button>
-                            </motion.div>
+          ) : (
+            /* Step 2: Matched Recipients */
+            <div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mb-8 flex justify-between items-center"
+              >
+                <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary">
+                  Matched recipients ({matches.length})
+                </h2>
+                <button onClick={() => setStep(1)} className="btn-outline">
+                  ← Adjust Preferences
+                </button>
+              </motion.div>
 
               {error && (
                 <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
@@ -970,61 +1008,74 @@ export default function PatronPortal() {
                 </div>
               )}
 
-                            <div className="grid gap-6">
-                                {matches.map((match, idx) => (
-                                    <motion.div
+              <div className="grid gap-6">
+                {matches.map((match, idx) => (
+                  <motion.div
                     key={match.ipfsHash}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.1 }}
-                                        className="glass-card p-6 hover:scale-[1.01] transition-transform border border-matrix-green-primary/25"
-                                    >
-                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-3 mb-3 flex-wrap">
-                                                    <h3 className="text-xl font-bold font-mono text-matrix-green-primary">
-                                                        {match.pseudonym}
-                                                    </h3>
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="glass-card p-6 hover:scale-[1.01] transition-transform border border-matrix-green-primary/25"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3 flex-wrap">
+                          <h3 className="text-xl font-bold font-mono text-matrix-green-primary">
+                            {match.pseudonym}
+                          </h3>
                           {match.verificationFlags.humanness && (
-                                                        <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30">
-                                                            Verified
-                                                        </span>
-                                                    )}
+                            <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30">
+                              Verified
+                            </span>
+                          )}
                           {match.verificationFlags.nsResident && (
-                                                        <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30 font-mono">
-                                                            NS
-                                                        </span>
-                                                    )}
+                            <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30 font-mono">
+                              NS
+                            </span>
+                          )}
                           {fundedStatus[match.ipfsHash]?.funded && (
-                                                        <span className="px-2 py-1 bg-yellow-400/10 text-yellow-400 text-xs rounded-full border border-yellow-400/60">
-                                                            ✓ Funded ({fundedStatus[match.ipfsHash].count}x) • {formatZEC(fundedStatus[match.ipfsHash].totalAmountZats / 1e8)}
-                                                        </span>
-                                                    )}
+                            <span className="px-2 py-1 bg-yellow-400/10 text-yellow-400 text-xs rounded-full border border-yellow-400/60">
+                              ✓ Funded ({fundedStatus[match.ipfsHash].count}x) •{" "}
+                              {formatZEC(
+                                fundedStatus[match.ipfsHash].totalAmountZats /
+                                  1e8
+                              )}
+                            </span>
+                          )}
                           <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30">
                             {match.matchScore}% match
                           </span>
-                                                </div>
+                        </div>
 
                         <p className="text-gray-400 mb-2 text-sm italic">
                           {match.matchReason}
                         </p>
 
-                                                <p className="text-gray-400 mb-3">{match.bio}</p>
+                        <p className="text-gray-400 mb-3">{match.bio}</p>
 
-                                                <div className="flex flex-wrap gap-2 mb-3">
-                                                    {match.skills.map((skill) => (
-                                                        <span
-                                                            key={skill}
-                                                            className="px-3 py-1 bg-black/50 text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/20"
-                                                        >
-                                                            {skill}
-                                                        </span>
-                                                    ))}
-                                                </div>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {match.skills.map((skill) => (
+                            <span
+                              key={skill}
+                              className="px-3 py-1 bg-black/50 text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/20"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
                         {fundedStatus[match.ipfsHash]?.funded && (
                           <p className="text-xs text-yellow-400 mb-3 font-mono">
-                            <span className="text-matrix-green-primary">Total funding received:</span>{" "}
-                            {formatZEC(fundedStatus[match.ipfsHash].totalAmountZats / 1e8)} ({fundedStatus[match.ipfsHash].count} {fundedStatus[match.ipfsHash].count === 1 ? 'grant' : 'grants'})
+                            <span className="text-matrix-green-primary">
+                              Total funding received:
+                            </span>{" "}
+                            {formatZEC(
+                              fundedStatus[match.ipfsHash].totalAmountZats / 1e8
+                            )}{" "}
+                            ({fundedStatus[match.ipfsHash].count}{" "}
+                            {fundedStatus[match.ipfsHash].count === 1
+                              ? "grant"
+                              : "grants"}
+                            )
                           </p>
                         )}
                         {match.fundingNeed && (
@@ -1036,13 +1087,13 @@ export default function PatronPortal() {
                           </p>
                         )}
 
-                                                <div className="flex items-center gap-4 text-sm text-gray-500">
-                                                    <span>📍 {match.location}</span>
-                                                    <span>🏷️ {match.category}</span>
-                                                </div>
-                                            </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span>📍 {match.location}</span>
+                          <span>🏷️ {match.category}</span>
+                        </div>
+                      </div>
 
-                                            <div className="flex md:flex-col gap-3">
+                      <div className="flex md:flex-col gap-3">
                         {quoteResults[match.ipfsHash] ? (
                           <div className="space-y-3">
                             <div className="glass-card p-4 border border-matrix-green-primary/30">
@@ -1056,12 +1107,15 @@ export default function PatronPortal() {
                               </p>
                               <div className="mb-4 flex flex-col items-center gap-2">
                                 <div className="bg-black p-3 rounded border border-matrix-green-primary/30">
-                                  <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=00ff41&bgcolor=000000&data=${encodeURIComponent(
-                                      quoteResults[match.ipfsHash].depositAddress
-                                    )}`}
-                                    alt="Deposit address QR"
-                                    className="w-40 h-40"
+                                  <QRCode
+                                    value={
+                                      quoteResults[match.ipfsHash]
+                                        .depositAddress
+                                    }
+                                    size={200}
+                                    fgColor="#00ff41"
+                                    bgColor="#000000"
+                                    qrStyle="squares"
                                   />
                                 </div>
                                 <div className="bg-black/50 p-3 rounded border border-matrix-green-primary/20 w-full">
@@ -1069,7 +1123,10 @@ export default function PatronPortal() {
                                     Deposit Address:
                                   </p>
                                   <p className="text-matrix-green-primary font-mono text-xs break-all text-center">
-                                    {quoteResults[match.ipfsHash].depositAddress}
+                                    {
+                                      quoteResults[match.ipfsHash]
+                                        .depositAddress
+                                    }
                                   </p>
                                 </div>
                               </div>
@@ -1127,28 +1184,28 @@ export default function PatronPortal() {
                                   parseFloat(preferences.amount)
                                 )}`
                               )}
-                                                </button>
-                                                <button className="btn-outline text-sm px-6">
-                                                    View Details
-                                                </button>
+                            </button>
+                            <button className="btn-outline text-sm px-6">
+                              View Details
+                            </button>
                           </>
                         )}
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
+          )}
+        </div>
+      </div>
       {/* Direct funding modal */}
       {directOpen && directProfile && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
           <div className="glass-card max-w-md w-full mx-4 p-6 border border-matrix-green-primary/40">
             <h3 className="text-lg font-semibold text-matrix-green-primary mb-2">
-              Fund{" "}
-              {directProfile.profile?.persona?.pseudonym ?? "builder"} privately
+              Fund {directProfile.profile?.persona?.pseudonym ?? "builder"}{" "}
+              privately
             </h3>
             <p className="text-xs text-gray-400 mb-4">
               Scan the QR code with your Zcash wallet to send a shielded
@@ -1158,12 +1215,14 @@ export default function PatronPortal() {
             {directProfile.profile?.paymentAddress ? (
               <div className="mb-4 flex flex-col items-center gap-2">
                 <div className="bg-black p-3 rounded border border-matrix-green-primary/30">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=00ff41&bgcolor=000000&data=${encodeURIComponent(
-                      directProfile.profile.paymentAddress
-                    )}`}
-                    alt="Zcash shielded address QR"
-                    className="w-40 h-40"
+                  <QRCode
+                    value={directProfile.profile.paymentAddress}
+                    size={220}
+                    logoPaddingStyle="circle"
+                    logoImage="/zcash.svg"
+                    fgColor="#00ff41"
+                    bgColor="#000000"
+                    qrStyle="squares"
                   />
                 </div>
                 <p className="text-[10px] text-gray-400 font-mono break-all text-center">
@@ -1256,6 +1315,6 @@ export default function PatronPortal() {
           </div>
         </div>
       )}
-        </main>
-    );
+    </main>
+  );
 }
