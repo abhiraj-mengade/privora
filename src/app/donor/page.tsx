@@ -1120,7 +1120,7 @@ export default function PatronPortal() {
                                     size={220}
                                     logoPaddingStyle="circle"
                                     logoImage="/zcash.svg"
-                                    fgColor="#00ff41"
+                                    fgColor="#F9D47E"
                                     bgColor="#000000"
                                     qrStyle="squares"
                                   />
@@ -1221,7 +1221,7 @@ export default function PatronPortal() {
                     size={220}
                     logoPaddingStyle="circle"
                     logoImage="/zcash.svg"
-                    fgColor="#00ff41"
+                    fgColor="#F9D47E"
                     bgColor="#000000"
                     qrStyle="squares"
                   />
