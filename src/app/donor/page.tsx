@@ -82,8 +82,13 @@ export default function PatronPortal() {
   const [directLoading, setDirectLoading] = useState(false);
   const [directSbtId, setDirectSbtId] = useState<string | null>(null);
 
-  // Browse all recipients filters
-  const [filterStartupSociety, setFilterStartupSociety] = useState(false);
+  // Startup societies configuration
+  const startupSocieties = [
+    { id: "networkSchool", name: "Network School", color: "text-matrix-green-primary" },
+    { id: "theResidency", name: "The Residency", color: "text-blue-400" },
+    { id: "antlerFellow", name: "Antler Fellow", color: "text-purple-400" },
+    { id: "yCombinator", name: "Y Combinator", color: "text-orange-400" },
+  ];
 
   // Thirdweb wallet for SBT minting
   const thirdwebSigner = useSigner();
@@ -350,11 +355,23 @@ export default function PatronPortal() {
         return;
       }
 
-      // Step 3: Use AI to find matches (Agentic Wallet)
-      const matched = await findMatchingPersonas(preferences, validPersonas);
+      // Step 3: Transform IPFS profiles to match expected structure
+      const transformedPersonas = validPersonas.map((p) => {
+        // IPFS structure: { persona: {...}, proofs: {...}, paymentAddress: "..." }
+        // Expected structure: { ipfsHash: "...", profile: PIIStrippedProfile }
+        // Extract the persona object (which is the sanitized PIIStrippedProfile)
+        const persona = p.profile?.persona || p.profile;
+        return {
+          ipfsHash: p.ipfsHash,
+          profile: persona,
+        };
+      });
+
+      // Step 4: Use AI to find matches (Agentic Wallet)
+      const matched = await findMatchingPersonas(preferences, transformedPersonas);
 
       setMatches(matched);
-      setStep(2);
+        setStep(2);
     } catch (err) {
       console.error("Error finding matches:", err);
       setError(err instanceof Error ? err.message : "Failed to find matches");
@@ -606,7 +623,7 @@ export default function PatronPortal() {
                     placeholder='e.g. "Fund privacy tools for activists in high-risk regions"'
                     className="input-field min-h-24 resize-none"
                   />
-                </div>
+                            </div>
 
                             {/* Submit */}
                 {error && (
@@ -644,36 +661,13 @@ export default function PatronPortal() {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h3 className="text-lg md:text-xl font-semibold text-matrix-green-primary">
-                      Browse all recipients
+                      Browse all builders
                     </h3>
-                    <div className="flex items-center gap-3 mt-1">
-                      <label className="flex items-center gap-1.5 text-[11px] text-gray-400 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={filterStartupSociety}
-                          onChange={(e) =>
-                            setFilterStartupSociety(e.target.checked)
-                          }
-                          className="w-3.5 h-3.5 accent-matrix-green-primary"
-                        />
-                        <span>Show only startup society (Network School) members</span>
-                      </label>
-                    </div>
                   </div>
                   <div className="text-right">
                     <span className="block text-xs text-gray-500 font-mono">
                       {allProfiles.length} profiles
                     </span>
-                    {filterStartupSociety && (
-                      <span className="block text-[10px] text-matrix-green-primary/80 font-mono">
-                        NS members:{" "}
-                        {
-                          allProfiles.filter(
-                            (p) => p.profile?.proofs?.networkSchool
-                          ).length
-                        }
-                      </span>
-                    )}
                   </div>
                 </div>
                 {allProfiles.length === 0 ? (
@@ -683,13 +677,7 @@ export default function PatronPortal() {
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {allProfiles
-                      .filter((entry) =>
-                        filterStartupSociety
-                          ? entry.profile?.proofs?.networkSchool
-                          : true
-                      )
-                      .map((entry) => {
+                    {allProfiles.map((entry) => {
                       const { ipfsHash, profile } = entry;
                       const persona = profile.persona ?? {};
                       const skills: string[] = persona.skills ?? [];
@@ -811,6 +799,85 @@ export default function PatronPortal() {
                   </div>
                 )}
                         </motion.div>
+
+              {/* Startup Societies Section */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="glass-card p-6 md:p-7 border border-matrix-green-primary/20 mt-6"
+              >
+                <h3 className="text-lg md:text-xl font-semibold text-matrix-green-primary mb-4">
+                  Startup Societies (ZK-Census)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {startupSocieties.map((society) => {
+                    // Filter profiles by society
+                    const societyProfiles = allProfiles.filter((entry) => {
+                      const proofs = entry.profile?.proofs ?? {};
+                      if (society.id === "networkSchool") {
+                        return proofs.networkSchool;
+                      }
+                      // For other societies, check if they exist in proofs
+                      // (currently only Network School is implemented)
+                      return proofs[society.id] || false;
+                    });
+
+                    return (
+                      <div
+                        key={society.id}
+                        className="border border-matrix-green-primary/25 rounded-lg p-4"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className={`font-semibold ${society.color}`}>
+                            {society.name}
+                          </h4>
+                          <span className="text-xs text-gray-500 font-mono">
+                            {societyProfiles.length} members
+                          </span>
+                        </div>
+                        {societyProfiles.length === 0 ? (
+                          <p className="text-xs text-gray-500">
+                            No verified members yet
+                          </p>
+                        ) : (
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {societyProfiles.map((entry) => {
+                              const persona = entry.profile?.persona ?? {};
+                              const ipfsHash = entry.ipfsHash;
+                              return (
+                                <div
+                                  key={ipfsHash}
+                                  className="flex items-center justify-between p-2 rounded border border-matrix-green-primary/10 hover:bg-matrix-green-subtle/10 cursor-pointer"
+                                  onClick={() => openDirectModal(entry)}
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-mono text-matrix-green-primary truncate">
+                                      {persona.pseudonym ?? "Anonymous"}
+                                    </p>
+                                    <p className="text-[10px] text-gray-500 truncate">
+                                      {persona.category ?? "Uncategorized"}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openDirectModal(entry);
+                                    }}
+                                    className="btn-outline text-[10px] px-2 py-1 ml-2"
+                                  >
+                                    Fund
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
             </div>
                     ) : (
                         /* Step 2: Matched Recipients */
@@ -915,13 +982,24 @@ export default function PatronPortal() {
                                 to the address below. NEAR Intents will complete
                                 the transaction to {match.pseudonym}.
                               </p>
-                              <div className="bg-black/50 p-3 rounded border border-matrix-green-primary/20 mb-3">
-                                <p className="text-xs text-gray-500 mb-1">
-                                  Deposit Address:
-                                </p>
-                                <p className="text-matrix-green-primary font-mono text-xs break-all">
-                                  {quoteResults[match.ipfsHash].depositAddress}
-                                </p>
+                              <div className="mb-4 flex flex-col items-center gap-2">
+                                <div className="bg-black p-3 rounded border border-matrix-green-primary/30">
+                                  <img
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=00ff41&bgcolor=000000&data=${encodeURIComponent(
+                                      quoteResults[match.ipfsHash].depositAddress
+                                    )}`}
+                                    alt="Deposit address QR"
+                                    className="w-40 h-40"
+                                  />
+                                </div>
+                                <div className="bg-black/50 p-3 rounded border border-matrix-green-primary/20 w-full">
+                                  <p className="text-xs text-gray-500 mb-1">
+                                    Deposit Address:
+                                  </p>
+                                  <p className="text-matrix-green-primary font-mono text-xs break-all text-center">
+                                    {quoteResults[match.ipfsHash].depositAddress}
+                                  </p>
+                                </div>
                               </div>
                               <div className="flex gap-2">
                                 <button
@@ -1005,11 +1083,11 @@ export default function PatronPortal() {
               donation directly to this builder. No on‑chain link is created
               here; only the shielded Zcash layer sees the payment.
             </p>
-            {directProfile.profile?.paymentAddress && (
+            {directProfile.profile?.paymentAddress ? (
               <div className="mb-4 flex flex-col items-center gap-2">
-                <div className="bg-white p-3 rounded">
+                <div className="bg-black p-3 rounded border border-matrix-green-primary/30">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=00ff41&bgcolor=000000&data=${encodeURIComponent(
                       directProfile.profile.paymentAddress
                     )}`}
                     alt="Zcash shielded address QR"
@@ -1018,6 +1096,14 @@ export default function PatronPortal() {
                 </div>
                 <p className="text-[10px] text-gray-400 font-mono break-all text-center">
                   {directProfile.profile.paymentAddress}
+                </p>
+              </div>
+            ) : (
+              <div className="mb-4 p-4 rounded border border-yellow-400/40 bg-black/40">
+                <p className="text-xs text-yellow-400 text-center">
+                  ⚠️ This builder hasn't provided a Zcash shielded address yet.
+                  They need to add their payment address in their profile before
+                  you can fund them directly.
                 </p>
               </div>
             )}
@@ -1071,7 +1157,7 @@ export default function PatronPortal() {
               >
                 Cancel
               </button>
-              {thirdwebAddress ? (
+              {thirdwebAddress && directProfile.profile?.paymentAddress ? (
                 <button
                   onClick={handleMintDirectSbt}
                   disabled={directLoading}
@@ -1083,8 +1169,15 @@ export default function PatronPortal() {
                 <button
                   disabled
                   className="btn-primary flex-1 opacity-50 cursor-not-allowed"
+                  title={
+                    !thirdwebAddress
+                      ? "Connect wallet to mint"
+                      : "Builder needs to add payment address"
+                  }
                 >
-                  Connect wallet to mint
+                  {!thirdwebAddress
+                    ? "Connect wallet to mint"
+                    : "Payment address required"}
                 </button>
               )}
             </div>

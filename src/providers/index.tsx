@@ -18,15 +18,15 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThirdwebProvider clientId={clientId} activeChain="sepolia">
-        <WalletSelectorProvider
-          config={{
-            network: "testnet",
-            createAccessKeyFor: "privora.testnet",
-            modules: [setupMeteorWallet()],
-          }}
-        >
-          {children}
-        </WalletSelectorProvider>
+    <WalletSelectorProvider
+      config={{
+        network: "testnet",
+        createAccessKeyFor: "privora.testnet",
+        modules: [setupMeteorWallet()],
+      }}
+    >
+      {children}
+    </WalletSelectorProvider>
       </ThirdwebProvider>
     </QueryClientProvider>
   );

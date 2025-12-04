@@ -18,6 +18,7 @@ export interface PIIStrippedProfile {
         nsResident: boolean;
         location: boolean;
     };
+    fundingNeed?: string; // Optional funding need description
 }
 
 /**
@@ -29,6 +30,7 @@ export async function stripPII(rawProfile: {
     skills: string[];
     bio: string;
     location: string;
+    fundingNeed?: string;
     verificationFlags: {
         humanness: boolean;
         nsResident: boolean;
@@ -43,13 +45,14 @@ Input profile:
 - Skills: ${rawProfile.skills.join(', ')}
 - Bio: ${rawProfile.bio}
 - Location: ${rawProfile.location}
+- Funding Need: ${(rawProfile as any).fundingNeed || 'Not specified'}
 - Verifications: Humanness=${rawProfile.verificationFlags.humanness}, NS Resident=${rawProfile.verificationFlags.nsResident}, Location=${rawProfile.verificationFlags.location}
 
 Your task:
 1. Remove any PII from the bio (names, specific addresses, phone numbers, emails, etc.)
 2. Generalize location to coarse categories only (e.g., "High-Risk Region", "Academic Institution", "Global")
 3. If GitHub/Portfolio links contain identifying info, anonymize or remove them
-4. Keep skills, category, and verification flags intact
+4. Keep skills, category, verification flags, and funding need intact (sanitize funding need if it contains PII)
 5. Ensure the pseudonym is safe (no real names)
 
 Return ONLY a valid JSON object with this exact structure:
@@ -59,6 +62,7 @@ Return ONLY a valid JSON object with this exact structure:
     "skills": ["string"],
     "bio": "string (PII-free)",
     "location": "string (coarse only)",
+    "fundingNeed": "string (PII-free, optional)",
     "verificationFlags": {
         "humanness": boolean,
         "nsResident": boolean,
@@ -163,7 +167,7 @@ export async function findMatchingPersonas(
         bio: p.profile.bio,
         location: p.profile.location,
         // Funding need may or may not be present; treated as optional
-        fundingNeed: (p as any).fundingNeed,
+        fundingNeed: p.profile.fundingNeed,
         verifications: p.profile.verificationFlags,
     }));
 
@@ -181,9 +185,10 @@ ${JSON.stringify(personasSummary, null, 2)}
 
 Your task:
 1. Score each persona (0-100) based on how well they match the donor's intent
-2. Consider topic alignment, geographic preferences, and verification status
-3. Return personas with score >= 50, sorted by match score (highest first)
-4. Provide a brief reason for each match
+2. Consider topic alignment, geographic preferences, verification status, and funding needs
+3. If the donor hasn't specified topics or preferences, be more lenient and match based on general alignment
+4. Return personas with score >= 30 (lower threshold to ensure matches), sorted by match score (highest first)
+5. Provide a brief reason for each match
 
 Return ONLY a valid JSON array with this exact structure:
 [
@@ -194,7 +199,7 @@ Return ONLY a valid JSON array with this exact structure:
     }
 ]
 
-Include only personas with matchScore >= 50, sorted by matchScore descending.`;
+Include only personas with matchScore >= 30, sorted by matchScore descending. If no personas meet the threshold, return the top 1-2 personas anyway with their scores.`;
 
     try {
         const response = await fetch(NEAR_AI_API_ROUTE, {
