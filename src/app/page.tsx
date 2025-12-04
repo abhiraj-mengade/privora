@@ -158,18 +158,24 @@ export default function Home() {
                 description:
                   "Donations flow through Z-addresses (shielded addresses). Transaction amounts, senders, and recipients remain encrypted on-chain using zk-SNARKs. Only the parties involved can decrypt their own transactions.",
                 tech: "zk-SNARKs",
+                footerLeft: "Private by default",
+                footerRight: "auditable on-chain",
               },
               {
-                title: "Ethereum Sepolia coordination",
+                title: "NEAR AI Cloud matching",
                 description:
-                  "Smart contracts on Sepolia handle IPFS persona indexing and FHE-enabled impact SBTs. Only IPFS hashes, funding counts, and encrypted amounts are stored on-chain—never raw profiles or payment details.",
-                tech: "Solidity · FHE",
+                  "Patron intents are matched with builder profiles using NEAR AI Cloud's TEE (Trusted Execution Environment). PII is stripped server-side before matching, ensuring privacy-preserving persona discovery without exposing sensitive data.",
+                tech: "NEAR AI · TEE",
+                footerLeft: "PII stripped",
+                footerRight: "intent-based matching",
               },
               {
                 title: "FHE-enabled verification",
                 description:
                   "Builders prove Network School residency and other credentials using FHE (Fully Homomorphic Encryption) on Fhenix. Verification status is encrypted and only decryptable by the claimant via CoFHE.",
                 tech: "FHE · CoFHE",
+                footerLeft: "Encrypted proofs",
+                footerRight: "zero-knowledge claims",
               },
             ].map((item, idx) => (
               <div
@@ -190,9 +196,9 @@ export default function Home() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-matrix-green-primary/15 text-[11px] text-gray-500 font-mono flex items-center justify-between">
-                  <span>Deterministic guarantees</span>
+                  <span>{item.footerLeft}</span>
                   <span className="text-matrix-green-primary/70">
-                    no manual screening
+                    {item.footerRight}
                   </span>
                 </div>
               </div>
