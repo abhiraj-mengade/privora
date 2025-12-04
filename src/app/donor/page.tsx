@@ -157,7 +157,7 @@ export default function PatronPortal() {
           // Valid IPFS CID v0 (Qm...) should be 46 characters
           // Valid IPFS CID v1 (bafkrei...) should start with 'baf'
           if (!hash || hash.length < 10) return false;
-          
+
           // Filter out placeholder hashes (lots of zeros)
           if (hash.startsWith('Qm') && hash.length === 46) {
             // Check if it's mostly zeros (placeholder)
@@ -168,12 +168,12 @@ export default function PatronPortal() {
               return false;
             }
           }
-          
+
           return true;
         };
 
         const validHashes = hashes.filter(isValidIPFSHash);
-        
+
         if (!validHashes.length) {
           console.warn('No valid IPFS hashes found after filtering');
           return;
@@ -470,7 +470,7 @@ export default function PatronPortal() {
     try {
       // Get recipient's payment address from their profile
       let recipientZAddress: string;
-      
+
       // Try to get from the full profile first
       const fullProfile = allProfiles.find(p => p.ipfsHash === match.ipfsHash);
       if (fullProfile?.profile?.paymentAddress) {
@@ -1150,7 +1150,7 @@ export default function PatronPortal() {
                                     size={220}
                                     logoPaddingStyle="circle"
                                     logoImage="/zcash.svg"
-                                    fgColor="#F9D47E"
+                                    fgColor="#ffffff"
                                     bgColor="#000000"
                                     qrStyle="squares"
                                   />
@@ -1251,7 +1251,7 @@ export default function PatronPortal() {
                     size={220}
                     logoPaddingStyle="circle"
                     logoImage="/zcash.svg"
-                    fgColor="#F9D47E"
+                    fgColor="#ffffff"
                     bgColor="#000000"
                     qrStyle="squares"
                   />
