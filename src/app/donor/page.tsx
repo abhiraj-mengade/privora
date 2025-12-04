@@ -1160,7 +1160,7 @@ export default function PatronPortal() {
                                 transaction is private and encrypted.
                               </p>
                               <div className="mb-4 flex flex-col items-center gap-2">
-                                <div className="bg-white p-3 rounded border border-matrix-green-primary/30">
+                                <div className="bg-white p-2 rounded border border-matrix-green-primary/30">
                                   <QRCode
                                     value={quoteResults[match.ipfsHash].depositAddress}
                                     size={220}
@@ -1272,7 +1272,7 @@ export default function PatronPortal() {
             </p>
             {directProfile.profile?.paymentAddress ? (
               <div className="mb-4 flex flex-col items-center gap-2">
-                <div className="bg-white p-3 rounded border border-matrix-green-primary/30">
+                <div className="bg-white p-2 rounded border border-matrix-green-primary/30">
                   <QRCode
                     value={directProfile.profile.paymentAddress}
                     size={220}
