@@ -8,6 +8,8 @@
 
 A privacy-preserving philanthropy platform that enables anonymous donors to fund verified-but-pseudonymous builders through shielded Zcash transactions, coordinated on NEAR, with zero-knowledge proofs ensuring credibility without identity leakage.
 
+[![Demo](https://img.shields.io/badge/🚀_Live_Demo-privora--mu.vercel.app-00ff41?style=for-the-badge)](https://privora-mu.vercel.app/)
+
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Built with Next.js](https://img.shields.io/badge/Built%20with-Next.js-black)](https://nextjs.org/)
 [![Zcash](https://img.shields.io/badge/Privacy-Zcash-F3B724)](https://z.cash/)
