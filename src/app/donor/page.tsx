@@ -323,14 +323,6 @@ export default function PatronPortal() {
     setDirectLoading(true);
     setDirectError(null);
     try {
-      const recipientAddress: string | undefined =
-        directProfile.profile.paymentAddress;
-      if (!recipientAddress || !recipientAddress.startsWith("zs1")) {
-        throw new Error(
-          "Recipient does not have a valid Zcash shielded address"
-        );
-      }
-
       // Derive causeTag from builder's category or use a default
       const causeTag =
         directProfile.profile?.persona?.category ||
@@ -1320,7 +1312,7 @@ export default function PatronPortal() {
               >
                 Cancel
               </button>
-              {thirdwebAddress && directProfile.profile?.paymentAddress ? (
+              {thirdwebAddress ? (
                 <button
                   onClick={handleMintDirectSbt}
                   disabled={directLoading}
@@ -1332,15 +1324,9 @@ export default function PatronPortal() {
                 <button
                   disabled
                   className="btn-primary flex-1 opacity-50 cursor-not-allowed"
-                  title={
-                    !thirdwebAddress
-                      ? "Connect wallet to mint"
-                      : "Builder needs to add payment address"
-                  }
+                  title="Connect wallet to mint"
                 >
-                  {!thirdwebAddress
-                    ? "Connect wallet to mint"
-                    : "Payment address required"}
+                  Connect wallet to mint
                 </button>
               )}
             </div>
