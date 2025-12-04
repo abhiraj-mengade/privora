@@ -442,33 +442,41 @@ export default function PatronPortal() {
     setError(null);
 
     try {
-      // Get recipient's shielded address
-      const recipientZAddress = await getRecipientShieldedAddress(
-        match.ipfsHash
-      );
-
-      // Get quote from NEAR Intents 1Click API
-      const amount = parseFloat(preferences.amount);
-      if (isNaN(amount) || amount <= 0) {
-        throw new Error("Invalid donation amount");
+      // Get recipient's payment address from their profile
+      let recipientZAddress: string;
+      
+      // Try to get from the full profile first
+      const fullProfile = allProfiles.find(p => p.ipfsHash === match.ipfsHash);
+      if (fullProfile?.profile?.paymentAddress) {
+        recipientZAddress = (fullProfile.profile as any).paymentAddress;
+      } else {
+        // Fallback: try to retrieve from IPFS
+        try {
+          const profile = await retrieveFromIPFS(match.ipfsHash) as any;
+          recipientZAddress = profile?.paymentAddress || await getRecipientShieldedAddress(match.ipfsHash);
+        } catch {
+          recipientZAddress = await getRecipientShieldedAddress(match.ipfsHash);
+        }
       }
 
-      const result = await sendShieldedTransaction({
-        toAddress: recipientZAddress,
-        amount,
-        memo: `Donation to ${match.pseudonym} via Privora`,
-        refundTo: donorZAddress || undefined,
-      });
+      if (!recipientZAddress || !recipientZAddress.startsWith("zs1")) {
+        throw new Error("Recipient does not have a valid Zcash shielded address");
+      }
 
-      // Store quote result to show deposit address
+      // Store the payment address directly (skip API call)
       setQuoteResults((prev) => ({
         ...prev,
-        [match.ipfsHash]: result,
+        [match.ipfsHash]: {
+          quoteId: `direct_${match.ipfsHash}`,
+          depositAddress: recipientZAddress,
+          status: 'quote_received' as const,
+          confirmationCount: 0,
+        },
       }));
     } catch (err) {
-      console.error("Error getting donation quote:", err);
+      console.error("Error getting recipient address:", err);
       setError(
-        err instanceof Error ? err.message : "Failed to get donation quote"
+        err instanceof Error ? err.message : "Failed to get recipient address"
       );
       setSendingDonation(null);
     }
@@ -1097,20 +1105,18 @@ export default function PatronPortal() {
                           <div className="space-y-3">
                             <div className="glass-card p-4 border border-matrix-green-primary/30">
                               <h4 className="text-sm font-bold text-matrix-green-primary mb-2">
-                                Send ZEC to Deposit Address
+                                Send ZEC to {match.pseudonym}
                               </h4>
                               <p className="text-xs text-gray-400 mb-3">
-                                Send {formatZEC(parseFloat(preferences.amount))}{" "}
-                                to the address below. NEAR Intents will complete
-                                the transaction to {match.pseudonym}.
+                                Scan the QR code with your Zcash wallet to send{" "}
+                                {formatZEC(parseFloat(preferences.amount))}{" "}
+                                directly to this builder's shielded address. The
+                                transaction is private and encrypted.
                               </p>
                               <div className="mb-4 flex flex-col items-center gap-2">
                                 <div className="bg-black p-3 rounded border border-matrix-green-primary/30">
                                   <QRCode
-                                    value={encodeURIComponent(
-                                      quoteResults[match.ipfsHash]
-                                        .depositAddress
-                                    )}
+                                    value={quoteResults[match.ipfsHash].depositAddress}
                                     size={220}
                                     logoPaddingStyle="circle"
                                     logoImage="/zcash.svg"
@@ -1121,7 +1127,7 @@ export default function PatronPortal() {
                                 </div>
                                 <div className="bg-black/50 p-3 rounded border border-matrix-green-primary/20 w-full">
                                   <p className="text-xs text-gray-500 mb-1">
-                                    Deposit Address:
+                                    Shielded Address:
                                   </p>
                                   <p className="text-matrix-green-primary font-mono text-xs break-all text-center">
                                     {
@@ -1139,18 +1145,12 @@ export default function PatronPortal() {
                                         .depositAddress
                                     );
                                     alert(
-                                      "Deposit address copied to clipboard!"
+                                      "Shielded address copied to clipboard!"
                                     );
                                   }}
                                   className="btn-outline text-xs px-4 py-2 flex-1"
                                 >
                                   Copy Address
-                                </button>
-                                <button
-                                  onClick={() => handleCheckQuoteStatus(match)}
-                                  className="btn-primary text-xs px-4 py-2 flex-1"
-                                >
-                                  Check Status
                                 </button>
                               </div>
                               <button
@@ -1178,7 +1178,7 @@ export default function PatronPortal() {
                               {sendingDonation === match.ipfsHash ? (
                                 <span className="flex items-center gap-2">
                                   <span className="animate-spin">⟳</span>
-                                  Getting quote...
+                                  Loading...
                                 </span>
                               ) : (
                                 `Send ${formatZEC(
@@ -1217,9 +1217,7 @@ export default function PatronPortal() {
               <div className="mb-4 flex flex-col items-center gap-2">
                 <div className="bg-black p-3 rounded border border-matrix-green-primary/30">
                   <QRCode
-                    value={encodeURIComponent(
-                      directProfile.profile.paymentAddress
-                    )}
+                    value={directProfile.profile.paymentAddress}
                     size={220}
                     logoPaddingStyle="circle"
                     logoImage="/zcash.svg"
