@@ -441,7 +441,7 @@ export default function PatronPortal() {
         // Expected structure: { ipfsHash: "...", profile: PIIStrippedProfile }
         // Extract the persona object (which is the sanitized PIIStrippedProfile)
         const persona = p.profile?.persona || p.profile;
-        
+
         // Ensure verificationFlags exists with defaults
         if (persona && !persona.verificationFlags) {
           // Try to get from proofs if available
@@ -452,7 +452,7 @@ export default function PatronPortal() {
             location: proofs.location || false,
           };
         }
-        
+
         return {
           ipfsHash: p.ipfsHash,
           profile: persona,
@@ -1160,7 +1160,7 @@ export default function PatronPortal() {
                                 transaction is private and encrypted.
                               </p>
                               <div className="mb-4 flex flex-col items-center gap-2">
-                                <div className="bg-black p-3 rounded border border-matrix-green-primary/30">
+                                <div className="bg-white p-3 rounded border border-matrix-green-primary/30">
                                   <QRCode
                                     value={quoteResults[match.ipfsHash].depositAddress}
                                     size={220}
@@ -1272,7 +1272,7 @@ export default function PatronPortal() {
             </p>
             {directProfile.profile?.paymentAddress ? (
               <div className="mb-4 flex flex-col items-center gap-2">
-                <div className="bg-black p-3 rounded border border-matrix-green-primary/30">
+                <div className="bg-white p-3 rounded border border-matrix-green-primary/30">
                   <QRCode
                     value={directProfile.profile.paymentAddress}
                     size={220}
