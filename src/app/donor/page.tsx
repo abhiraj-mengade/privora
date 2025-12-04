@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { QRCode } from "react-qrcode-logo";
-import MatrixRain from "@/components/MatrixRain";
 import { findMatchingPersonas, type MatchedPersona } from "@/lib/near-ai";
 import { retrieveFromIPFS } from "@/lib/ipfs";
 import { getStoredPersonas } from "@/lib/persona-store";
 import { fetchAllIndexedPersonas } from "@/lib/indexRegistry";
 import { verifyProof } from "@reclaimprotocol/js-sdk";
+import { QRCode } from "react-qrcode-logo";
 import {
   sendShieldedTransaction,
   getRecipientShieldedAddress,
@@ -1108,11 +1107,13 @@ export default function PatronPortal() {
                               <div className="mb-4 flex flex-col items-center gap-2">
                                 <div className="bg-black p-3 rounded border border-matrix-green-primary/30">
                                   <QRCode
-                                    value={
+                                    value={encodeURIComponent(
                                       quoteResults[match.ipfsHash]
                                         .depositAddress
-                                    }
-                                    size={200}
+                                    )}
+                                    size={220}
+                                    logoPaddingStyle="circle"
+                                    logoImage="/zcash.svg"
                                     fgColor="#00ff41"
                                     bgColor="#000000"
                                     qrStyle="squares"
@@ -1216,7 +1217,9 @@ export default function PatronPortal() {
               <div className="mb-4 flex flex-col items-center gap-2">
                 <div className="bg-black p-3 rounded border border-matrix-green-primary/30">
                   <QRCode
-                    value={directProfile.profile.paymentAddress}
+                    value={encodeURIComponent(
+                      directProfile.profile.paymentAddress
+                    )}
                     size={220}
                     logoPaddingStyle="circle"
                     logoImage="/zcash.svg"
