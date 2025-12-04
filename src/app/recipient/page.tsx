@@ -12,6 +12,7 @@ interface RecipientProfile {
   category: string;
   skills: string[];
   bio: string;
+  fundingNeed: string;
   location: string;
   github?: string;
   portfolio?: string;
@@ -24,6 +25,7 @@ export default function RecipientPortal() {
     category: "",
     skills: [],
     bio: "",
+    fundingNeed: "",
     location: "",
     github: "",
     portfolio: "",
@@ -101,7 +103,7 @@ export default function RecipientPortal() {
         throw new Error(`Reclaim provider ID not configured for ${label}`);
       }
 
-      // Initialize a proof request for this provider
+       // Initialize a proof request for this provider
       const reclaimClient = await ReclaimProofRequest.init(
         appId,
         appSecret,
@@ -111,13 +113,13 @@ export default function RecipientPortal() {
         }
       );
 
-      // Get the URL where the user completes the verification
-      const requestUrl = await reclaimClient.getRequestUrl();
-
-      // Open Reclaim UI in a new tab/window so the user can complete the flow
-      if (typeof window !== "undefined") {
-        window.open(requestUrl, "_blank", "noopener,noreferrer");
-      }
+       // Get the URL where the user completes the verification.
+       // On mobile, opening this URL will trigger the AppClip / Instant App path;
+       // on desktop, it will show the Reclaim web flow (which can display a QR).
+       const requestUrl = await reclaimClient.getRequestUrl();
+       if (typeof window !== "undefined") {
+         window.open(requestUrl, "_blank", "noopener,noreferrer");
+       }
 
       // Start polling session status; onSuccess fires when proof is ready
       await reclaimClient.startSession({
@@ -174,6 +176,7 @@ export default function RecipientPortal() {
         category: profile.category,
         skills: profile.skills,
         bio: profile.bio,
+        fundingNeed: profile.fundingNeed,
         location: profile.location,
         github: profile.github || undefined,
         portfolio: profile.portfolio || undefined,
@@ -198,13 +201,13 @@ export default function RecipientPortal() {
         await handleSanitize();
       }
 
-      if (!sanitizedPersona) {
-        throw new Error("Sanitized persona not available");
-      }
+      // if (!sanitizedPersona) {
+      //   throw new Error("Sanitized persona not available");
+      // }
 
-      if (!zcashAddress.startsWith("zs1")) {
-        throw new Error("Valid Zcash shielded address (zs1...) is required");
-      }
+      // if (!zcashAddress.startsWith("zs1")) {
+      //   throw new Error("Valid Zcash shielded address (zs1...) is required");
+      // }
 
       // Compose final persona object that donors will download from IPFS
       const finalProfile = {
@@ -360,7 +363,7 @@ export default function RecipientPortal() {
                 </div>
               </div>
 
-              {/* Bio */}
+                {/* Bio */}
               <div className="mb-6">
                 <label className="block text-matrix-green-primary font-semibold mb-3">
                   Bio (non-identifying)
@@ -374,6 +377,21 @@ export default function RecipientPortal() {
                   className="input-field min-h-32 resize-none"
                 />
               </div>
+
+                {/* Funding need */}
+                <div className="mb-6">
+                  <label className="block text-matrix-green-primary font-semibold mb-3">
+                    What do you need funding for?
+                  </label>
+                  <textarea
+                    value={profile.fundingNeed}
+                    onChange={(e) =>
+                      setProfile({ ...profile, fundingNeed: e.target.value })
+                    }
+                    placeholder="Explain the project, milestone, or expense the ZEC will support..."
+                    className="input-field min-h-28 resize-none"
+                  />
+                </div>
 
               {/* Location */}
               <div className="mb-6">
@@ -453,6 +471,7 @@ export default function RecipientPortal() {
                   !profile.category ||
                   profile.skills.length === 0 ||
                   !profile.bio ||
+                  !profile.fundingNeed ||
                   !profile.location
                 }
                 className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
@@ -782,6 +801,12 @@ export default function RecipientPortal() {
                       <span className="text-matrix-green-primary">Skills:</span>{" "}
                       {profile.skills.join(", ")}
                     </p>
+                          <p className="text-gray-300">
+                            <span className="text-matrix-green-primary">
+                              Funding need:
+                            </span>{" "}
+                            {profile.fundingNeed}
+                          </p>
                     <p className="text-gray-300">
                       <span className="text-matrix-green-primary">
                         Verifications:
