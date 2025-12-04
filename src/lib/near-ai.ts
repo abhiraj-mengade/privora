@@ -269,11 +269,11 @@ IMPORTANT: Return ALL personas (one entry for each persona in the Available Pers
 
         // Map matches back to full persona data, sorted by score
         const matchedPersonas: MatchedPersona[] = matches
-            .map((match) => {
+            .flatMap((match) => {
                 const persona = availablePersonas[match.index];
                 if (!persona) {
                     console.warn(`Persona at index ${match.index} not found`);
-                    return null;
+                    return [];
                 }
                 // Safely extract verificationFlags with defaults
                 const verificationFlags = persona.profile.verificationFlags || {
@@ -282,7 +282,7 @@ IMPORTANT: Return ALL personas (one entry for each persona in the Available Pers
                     location: false,
                 };
 
-                return {
+                return [{
                     ipfsHash: persona.ipfsHash,
                     pseudonym: persona.profile.pseudonym || "Anonymous",
                     category: persona.profile.category || "General",
@@ -294,9 +294,8 @@ IMPORTANT: Return ALL personas (one entry for each persona in the Available Pers
                     matchScore: match.matchScore,
                     matchReason: match.matchReason,
                     verificationFlags,
-                };
+                }];
             })
-            .filter((p): p is MatchedPersona => p !== null)
             .sort((a, b) => b.matchScore - a.matchScore); // Sort by score descending
 
         return matchedPersonas;
