@@ -69,7 +69,7 @@ export default function AboutPage() {
                   3 · Zero-knowledge proofs
                 </h3>
                 <p className="text-gray-400">
-                  Recipients prove credentials (humanness, location,
+                  Builders prove credentials (humanness, location,
                   affiliations) without revealing their identity. Using
                   Semaphore-style circuits, they can demonstrate &quot;I am a
                   verified member of group X&quot; without revealing which
@@ -107,7 +107,7 @@ export default function AboutPage() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h3 className="font-bold text-matrix-green-light mb-3">
-                  For Donors
+                  For Patrons
                 </h3>
                 <ul className="space-y-2 text-gray-400 text-sm">
                   <li className="flex items-start gap-2">
@@ -133,7 +133,7 @@ export default function AboutPage() {
 
               <div>
                 <h3 className="font-bold text-matrix-green-light mb-3">
-                  For Recipients
+                  For Builders
                 </h3>
                 <ul className="space-y-2 text-gray-400 text-sm">
                   <li className="flex items-start gap-2">

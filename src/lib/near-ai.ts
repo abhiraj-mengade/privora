@@ -12,8 +12,6 @@ export interface PIIStrippedProfile {
     skills: string[];
     bio: string;
     location: string; // Coarse location only
-    github?: string; // Anonymized if provided
-    portfolio?: string; // Anonymized if provided
     verificationFlags: {
         humanness: boolean;
         nsResident: boolean;
@@ -30,8 +28,6 @@ export async function stripPII(rawProfile: {
     skills: string[];
     bio: string;
     location: string;
-    github?: string;
-    portfolio?: string;
     verificationFlags: {
         humanness: boolean;
         nsResident: boolean;
@@ -51,8 +47,6 @@ Input profile:
 - Skills: ${rawProfile.skills.join(', ')}
 - Bio: ${rawProfile.bio}
 - Location: ${rawProfile.location}
-- GitHub: ${rawProfile.github || 'N/A'}
-- Portfolio: ${rawProfile.portfolio || 'N/A'}
 - Verifications: Humanness=${rawProfile.verificationFlags.humanness}, NS Resident=${rawProfile.verificationFlags.nsResident}, Location=${rawProfile.verificationFlags.location}
 
 Your task:
@@ -69,8 +63,6 @@ Return ONLY a valid JSON object with this exact structure:
     "skills": ["string"],
     "bio": "string (PII-free)",
     "location": "string (coarse only)",
-    "github": "string or null",
-    "portfolio": "string or null",
     "verificationFlags": {
         "humanness": boolean,
         "nsResident": boolean,

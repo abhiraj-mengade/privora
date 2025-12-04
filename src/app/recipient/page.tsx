@@ -12,28 +12,24 @@ import {
   verifyNetworkSchoolProof,
 } from "@/lib/networkSchoolVerifier";
 
-interface RecipientProfile {
+interface BuilderProfile {
   pseudonym: string;
   category: string;
   skills: string[];
   bio: string;
   fundingNeed: string;
   location: string;
-  github?: string;
-  portfolio?: string;
 }
 
-export default function RecipientPortal() {
+export default function BuilderPortal() {
   const [step, setStep] = useState(1);
-  const [profile, setProfile] = useState<RecipientProfile>({
+  const [profile, setProfile] = useState<BuilderProfile>({
     pseudonym: "",
     category: "",
     skills: [],
     bio: "",
     fundingNeed: "",
     location: "",
-    github: "",
-    portfolio: "",
   });
 
   const [zkProofs, setZkProofs] = useState({
@@ -247,8 +243,6 @@ export default function RecipientPortal() {
         bio: profile.bio,
         fundingNeed: profile.fundingNeed,
         location: profile.location,
-        github: profile.github || undefined,
-        portfolio: profile.portfolio || undefined,
         verificationFlags: zkProofs,
       };
       const strippedProfile = await stripPII(rawProfile);
@@ -330,14 +324,14 @@ export default function RecipientPortal() {
               INTERFACE · RECIPIENTS
             </p>
             <h1 className="text-3xl md:text-5xl font-semibold md:font-bold mb-4">
-              <span className="glow-text">Recipient portal</span>{" "}
+              <span className="glow-text">Builder portal</span>{" "}
               <span className="text-white/90">for pseudonymous builders.</span>
             </h1>
-            <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
-              Publish an encrypted, non-doxxing profile; attach zk-proofs for
-              credibility; let donors discover you without ever learning your
-              real-world identity.
-            </p>
+              <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
+                Publish an encrypted, non-doxxing profile; attach zk-proofs for
+                credibility; let patrons discover you without ever learning your
+                real-world identity.
+              </p>
           </motion.div>
 
           {/* Progress Indicator */}
@@ -493,36 +487,7 @@ export default function RecipientPortal() {
                 </select>
               </div>
 
-              {/* Optional Links */}
-              <div className="mb-6">
-                <label className="block text-matrix-green-primary font-semibold mb-3">
-                  GitHub (optional)
-                </label>
-                <input
-                  type="text"
-                  value={profile.github}
-                  onChange={(e) =>
-                    setProfile({ ...profile, github: e.target.value })
-                  }
-                  placeholder="github.com/username"
-                  className="input-field"
-                />
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-matrix-green-primary font-semibold mb-3">
-                  Portfolio (optional)
-                </label>
-                <input
-                  type="text"
-                  value={profile.portfolio}
-                  onChange={(e) =>
-                    setProfile({ ...profile, portfolio: e.target.value })
-                  }
-                  placeholder="https://your-portfolio.com"
-                  className="input-field"
-                />
-              </div>
+              {/* Optional Links removed: GitHub / portfolio collected via zk proofs instead */}
 
               {/* Zcash shielded address */}
               <div className="mb-8">

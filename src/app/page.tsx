@@ -18,14 +18,14 @@ export default function Home() {
               <span className="text-white/90">one private graph.</span>
             </h2>
             <p className="text-sm md:text-base text-gray-400">
-              Donors express intent. Recipients prove credibility. Privora
+              Patrons express intent. Builders prove credibility. Privora
               stitches encrypted signals into matches without exposing either
               side to the public ledger.
             </p>
           </div>
 
           <div className="grid gap-6 lg:gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.1fr)]">
-            {/* For Donors */}
+            {/* For Patrons */}
             <div className="glass-card p-6 md:p-7 lg:p-8 relative overflow-hidden">
               <div className="pointer-events-none absolute -top-24 -right-24 h-48 w-48 rounded-full bg-gradient-matrix opacity-10 blur-3xl" />
               <div className="flex items-center justify-between gap-4 mb-6">
@@ -35,7 +35,7 @@ export default function Home() {
                   </div>
                   <div className="text-left">
                     <h3 className="text-xl md:text-2xl font-semibold text-matrix-green-primary">
-                      For donors
+                      For patrons
                     </h3>
                     <p className="text-xs text-gray-500 font-mono">
                       Intent → Match → Shielded settlement
@@ -78,7 +78,7 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* For Recipients */}
+            {/* For Builders */}
             <div className="glass-card p-6 md:p-7 lg:p-8 relative overflow-hidden">
               <div className="pointer-events-none absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-gradient-matrix opacity-10 blur-3xl" />
               <div className="flex items-center justify-between gap-4 mb-6">
@@ -88,7 +88,7 @@ export default function Home() {
                   </div>
                   <div className="text-left">
                     <h3 className="text-xl md:text-2xl font-semibold text-matrix-green-primary">
-                      For recipients
+                      For builders
                     </h3>
                     <p className="text-xs text-gray-500 font-mono">
                       zk-credentials → encrypted profile

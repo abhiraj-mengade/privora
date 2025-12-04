@@ -58,7 +58,7 @@ export default function Hero() {
             </Link>
             <Link href="/recipient" className="w-full sm:w-auto">
               <button className="btn-outline w-full sm:w-auto">
-                Apply as recipient
+                Apply as builder
               </button>
             </Link>
           </motion.div>
@@ -78,13 +78,13 @@ export default function Hero() {
 
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">Donor intents</span>
+                <span className="text-gray-400">Patron intents</span>
                 <span className="rounded-full bg-black/70 px-3 py-1 font-mono text-xs text-matrix-green-primary border border-matrix-green-primary/30">
                   private
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">Recipient proofs</span>
+                <span className="text-gray-400">Builder proofs</span>
                 <span className="text-xs font-mono text-matrix-green-primary/80">
                   zk-SNARKs, Semaphore
                 </span>

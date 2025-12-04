@@ -18,8 +18,8 @@ export default function Header() {
   }, []);
 
   const links = [
-    { href: "/donor", label: "For Donors" },
-    { href: "/recipient", label: "For Recipients" },
+    { href: "/donor", label: "For Patrons" },
+    { href: "/recipient", label: "For Builders" },
     { href: "/about", label: "How It Works" },
   ];
 

@@ -31,7 +31,7 @@ interface DonorPreferences {
   intentText: string;
 }
 
-export default function DonorPortal() {
+export default function PatronPortal() {
   const [step, setStep] = useState(1);
   const [preferences, setPreferences] = useState<DonorPreferences>({
     topics: [],
@@ -464,7 +464,7 @@ export default function DonorPortal() {
               INTERFACE · DONORS
             </p>
             <h1 className="text-3xl md:text-5xl font-semibold md:font-bold mb-4">
-              <span className="glow-text">Donor portal</span>{" "}
+              <span className="glow-text">Patron portal</span>{" "}
               <span className="text-white/90">for anonymous capital.</span>
             </h1>
             <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
