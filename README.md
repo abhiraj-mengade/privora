@@ -48,7 +48,6 @@ All donations flow through **Zcash shielded addresses (Z-addresses)**. The Zcash
 
 **Technical Implementation:**
 
-- Integration with NEAR Intents 1Click API for ZEC transfers
 - Shielded address generation for both donors and recipients
 - Transaction quotes and status polling for asynchronous settlement
 - No on-chain storage of Zcash transaction IDs (preserves privacy)
