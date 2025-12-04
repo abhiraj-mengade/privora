@@ -11,7 +11,7 @@ import {
   NetworkSchoolProof,
   verifyNetworkSchoolProof,
 } from "@/lib/networkSchoolVerifier";
-import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
+import { ConnectWallet, useAddress, useSigner } from "@thirdweb-dev/react";
 
 interface BuilderProfile {
   pseudonym: string;
@@ -55,6 +55,7 @@ export default function BuilderPortal() {
   const [evmAddress, setEvmAddress] = useState<string | null>(null);
   const [evmError, setEvmError] = useState<string | null>(null);
   const thirdwebAddress = useAddress();
+  const thirdwebSigner = useSigner();
 
   // Keep local display state in sync with Thirdweb's connected address
   if (thirdwebAddress && evmAddress !== thirdwebAddress) {
@@ -187,7 +188,7 @@ export default function BuilderPortal() {
   const handleVerifyNetworkSchool = async () => {
     try {
       setNetworkSchoolError(null);
-      if (!evmAddress) {
+      if (!evmAddress || !thirdwebSigner) {
         setNetworkSchoolError(
           "Connect an Ethereum wallet for Fhenix-based verification first."
         );
@@ -196,14 +197,21 @@ export default function BuilderPortal() {
       setNetworkSchoolError(null);
       setNetworkSchoolProof(null);
       setNetworkSchoolLoading(true);
-      const proof = await verifyNetworkSchoolProof();
+      const proof = await verifyNetworkSchoolProof(thirdwebSigner);
       setNetworkSchoolProof(proof);
       setZkProofs((prev) => ({ ...prev, nsResident: true }));
     } catch (e) {
       console.error("Network School verification failed:", e);
-      setNetworkSchoolError(
-        e instanceof Error ? e.message : "Network School verification failed"
-      );
+      const rawMessage = e instanceof Error ? e.message : String(e);
+      if (rawMessage.includes("NSVerifier: member not whitelisted")) {
+        setNetworkSchoolError(
+          "This wallet address is not in the Network School allowlist for this demo. Use a whitelisted NS member address or contact the operator to be added."
+        );
+      } else {
+        setNetworkSchoolError(
+          e instanceof Error ? e.message : "Network School verification failed"
+        );
+      }
     } finally {
       setNetworkSchoolLoading(false);
     }
@@ -279,7 +287,13 @@ export default function BuilderPortal() {
 
       // On‑chain global index (Sepolia) – best‑effort, non‑blocking
       try {
-        await registerPersonaOnChain(ipfsResult.ipfsHash);
+        if (thirdwebSigner) {
+          await registerPersonaOnChain(ipfsResult.ipfsHash, thirdwebSigner);
+        } else {
+          console.warn(
+            "No EVM wallet connected; persona stored locally but not indexed on‑chain"
+          );
+        }
       } catch (chainErr) {
         console.warn("Failed to register persona on‑chain index:", chainErr);
       }

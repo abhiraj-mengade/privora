@@ -1,4 +1,4 @@
-import { ethers, providers, Contract } from "ethers";
+import { ethers, providers, Contract, Signer } from "ethers";
 
 export interface IndexedPersona {
   owner: string;
@@ -19,16 +19,16 @@ function getRegistryEnv() {
   return addr;
 }
 
-export async function registerPersonaOnChain(ipfsHash: string): Promise<void> {
-  if (typeof window === "undefined" || !(window as any).ethereum) {
-    console.warn("No EVM wallet found; skipping on‑chain persona registration");
+export async function registerPersonaOnChain(
+  ipfsHash: string,
+  signer: Signer
+): Promise<void> {
+  if (!signer) {
+    console.warn("No EVM signer available; skipping on‑chain persona registration");
     return;
   }
 
   const contractAddress = getRegistryEnv();
-  const provider = new providers.Web3Provider((window as any).ethereum);
-  const signer = provider.getSigner();
-
   const contract = new Contract(contractAddress, registryAbi, signer);
   const tx = await contract.registerMyPersona(ipfsHash);
   await tx.wait();

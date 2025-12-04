@@ -6,7 +6,9 @@ const NEAR_AI_MODEL = 'deepseek-ai/DeepSeek-V3.1';
 export async function POST(request: Request) {
     try {
         const apiKey =
-            process.env.NEAR_AI_API_KEY || process.env.NEXT_PUBLIC_NEAR_AI_API_KEY;
+            process.env.NEAR_AI_API_KEY ||
+            process.env.NEXT_PUBLIC_NEAR_AI_API_KEY ||
+            process.env.NEXT_PUBLIC_NEAR;
 
         if (!apiKey) {
             return NextResponse.json(

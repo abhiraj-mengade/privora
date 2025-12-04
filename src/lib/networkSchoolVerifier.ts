@@ -1,4 +1,4 @@
-import { ethers, providers, Contract, utils } from "ethers";
+import { ethers, providers, Contract, utils, Signer } from "ethers";
 
 export interface NetworkSchoolProof {
   contractAddress: string;
@@ -22,18 +22,17 @@ const getEnv = () => {
   return { contract, chainId: BigInt(chainId) };
 };
 
-export async function verifyNetworkSchoolProof(): Promise<NetworkSchoolProof> {
-  if (typeof window === "undefined" || !(window as any).ethereum) {
-    throw new Error(
-      "Ethereum wallet not found. Please install an EVM wallet like MetaMask, Rabby, or Talisman."
-    );
+export async function verifyNetworkSchoolProof(
+  signer: Signer
+): Promise<NetworkSchoolProof> {
+  const { contract, chainId } = getEnv();
+
+  const provider = signer.provider;
+  if (!provider) {
+    throw new Error("Connected wallet has no provider; cannot detect network.");
   }
 
-  const { contract, chainId } = getEnv();
-  const provider = new providers.Web3Provider((window as any).ethereum);
-  const signer = provider.getSigner();
-
-  let network = await provider.getNetwork();
+  let network = await (provider as providers.Provider).getNetwork();
   if (network.chainId.toString() !== chainId.toString()) {
     const targetChainHex = utils.hexValue(chainId);
     try {
@@ -46,7 +45,7 @@ export async function verifyNetworkSchoolProof(): Promise<NetworkSchoolProof> {
         `Please switch your wallet to chain ${chainId.toString()} and try again`
       );
     }
-    network = await provider.getNetwork();
+    network = await (provider as providers.Provider).getNetwork();
     if (network.chainId.toString() !== chainId.toString()) {
       throw new Error(
         `Wallet not connected to required chain ${chainId.toString()}`

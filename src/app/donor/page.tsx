@@ -24,22 +24,22 @@ import {
 } from "@/lib/fundingStats";
 
 interface DonorPreferences {
-  topics: string[];
-  geography: string;
-  amount: string;
-  recurring: boolean;
+    topics: string[];
+    geography: string;
+    amount: string;
+    recurring: boolean;
   intentText: string;
 }
 
 export default function PatronPortal() {
-  const [step, setStep] = useState(1);
-  const [preferences, setPreferences] = useState<DonorPreferences>({
-    topics: [],
+    const [step, setStep] = useState(1);
+    const [preferences, setPreferences] = useState<DonorPreferences>({
+        topics: [],
     geography: "global",
     amount: "",
-    recurring: false,
+        recurring: false,
     intentText: "",
-  });
+    });
 
   const [matches, setMatches] = useState<MatchedPersona[]>([]);
   const [allProfiles, setAllProfiles] = useState<
@@ -57,7 +57,7 @@ export default function PatronPortal() {
   const [verifiedProofs, setVerifiedProofs] = useState<
     Record<
       string,
-      {
+        {
         github?: boolean;
         leetcode?: boolean;
         scholar?: boolean;
@@ -75,7 +75,7 @@ export default function PatronPortal() {
     ipfsHash: string;
     profile: any;
   } | null>(null);
-  const [directAmount, setDirectAmount] = useState("");
+  // Direct funding metadata (used only for SBT memo in the QR-based flow)
   const [directReason, setDirectReason] = useState("");
   const [directError, setDirectError] = useState<string | null>(null);
   const [directLoading, setDirectLoading] = useState(false);
@@ -85,7 +85,7 @@ export default function PatronPortal() {
   // Browse all recipients filters
   const [filterStartupSociety, setFilterStartupSociety] = useState(false);
 
-  const topicOptions = [
+    const topicOptions = [
     "Zero-Knowledge Proofs",
     "Privacy Technology",
     "DeFi Tooling",
@@ -93,16 +93,16 @@ export default function PatronPortal() {
     "Education",
     "Infrastructure",
     "Research",
-  ];
+    ];
 
-  const toggleTopic = (topic: string) => {
-    setPreferences((prev) => ({
-      ...prev,
-      topics: prev.topics.includes(topic)
-        ? prev.topics.filter((t) => t !== topic)
-        : [...prev.topics, topic],
-    }));
-  };
+    const toggleTopic = (topic: string) => {
+        setPreferences((prev) => ({
+            ...prev,
+            topics: prev.topics.includes(topic)
+                ? prev.topics.filter((t) => t !== topic)
+                : [...prev.topics, topic],
+        }));
+    };
 
   // Generate donor's shielded address on mount (optional, for refunds)
   useEffect(() => {
@@ -227,7 +227,6 @@ export default function PatronPortal() {
 
   const openDirectModal = (entry: { ipfsHash: string; profile: any }) => {
     setDirectProfile(entry);
-    setDirectAmount("");
     setDirectReason("");
     setDirectError(null);
     setDirectTxId(null);
@@ -235,29 +234,31 @@ export default function PatronPortal() {
     setDirectOpen(true);
   };
 
-  const handleConfirmDirectFunding = async () => {
+  // In the new flow, funding happens in the user's own Zcash wallet by
+  // scanning a QR code. This handler only mints the impact SBT after
+  // the patron has funded off‑chain.
+  const handleMintDirectSbt = async () => {
     if (!directProfile) return;
     setDirectLoading(true);
     setDirectError(null);
     setDirectTxId(null);
     try {
-      const amount = parseFloat(directAmount);
-      if (isNaN(amount) || amount <= 0) {
-        throw new Error("Enter a valid amount in ZEC");
-      }
-
       const recipientAddress: string | undefined =
         directProfile.profile.paymentAddress;
       if (!recipientAddress || !recipientAddress.startsWith("zs1")) {
-        throw new Error("Recipient does not have a valid Zcash shielded address");
+        throw new Error(
+          "Recipient does not have a valid Zcash shielded address"
+        );
       }
 
+      // For the demo, fabricate a txId locally. In production, the patron
+      // would paste the real Zcash txid after sending from their wallet.
       const txId = await sendDirectShieldedMock(
         recipientAddress,
-        amount,
+        0,
         directReason
-          ? `Privora direct grant: ${directReason}`
-          : "Privora direct grant"
+          ? `Privora direct grant (off‑chain payment): ${directReason}`
+          : "Privora direct grant (off‑chain payment)"
       );
       setDirectTxId(txId);
       try {
@@ -265,7 +266,7 @@ export default function PatronPortal() {
           donorAddress: donorZAddress,
           recipientPseudonym:
             directProfile.profile?.persona?.pseudonym ?? "recipient",
-          amountZec: amount,
+          amountZec: 0,
           txId,
           memo: directReason,
         });
@@ -275,7 +276,7 @@ export default function PatronPortal() {
       }
       // Record funding locally
       setFunding((prev) =>
-        recordFunding(directProfile.ipfsHash, amount, txId, "direct")
+        recordFunding(directProfile.ipfsHash, 0, txId, "direct")
       );
     } catch (err) {
       console.error("Error sending direct donation:", err);
@@ -448,135 +449,135 @@ export default function PatronPortal() {
       console.error("Error checking quote status:", err);
       setError(err instanceof Error ? err.message : "Failed to check status");
     }
-  };
+    };
 
-  return (
-    <main className="relative min-h-screen">
-      <div className="pt-32 pb-20 section-padding">
-        <div className="container-max max-w-6xl">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <p className="text-xs uppercase tracking-[0.3em] text-matrix-green-primary/70 mb-3">
-              INTERFACE · DONORS
-            </p>
-            <h1 className="text-3xl md:text-5xl font-semibold md:font-bold mb-4">
+    return (
+        <main className="relative min-h-screen">
+            <div className="pt-32 pb-20 section-padding">
+                <div className="container-max max-w-6xl">
+                    {/* Header */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center mb-12"
+                    >
+                        <p className="text-xs uppercase tracking-[0.3em] text-matrix-green-primary/70 mb-3">
+                            INTERFACE · DONORS
+                        </p>
+                        <h1 className="text-3xl md:text-5xl font-semibold md:font-bold mb-4">
               <span className="glow-text">Patron portal</span>{" "}
-              <span className="text-white/90">for anonymous capital.</span>
-            </h1>
-            <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
+                            <span className="text-white/90">for anonymous capital.</span>
+                        </h1>
+                        <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
               Express where you want your ZEC to land without ever putting your
               identity on-chain. Privora handles matching, proofs, and shielded
               settlement.
-            </p>
-          </motion.div>
+                        </p>
+                    </motion.div>
 
-          {step === 1 ? (
+                    {step === 1 ? (
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
               {/* AI intent panel */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
                 className="glass-card p-7 md:p-10 border border-matrix-green-primary/30"
-              >
-                <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-2">
-                  Set your preferences
-                </h2>
-                <p className="text-gray-400 text-xs md:text-sm mb-8">
+                        >
+                            <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary mb-2">
+                                Set your preferences
+                            </h2>
+                            <p className="text-gray-400 text-xs md:text-sm mb-8">
                   These sliders and tags never hit a public chain—only encrypted
                   signals feed the matcher.
-                </p>
+                            </p>
 
-                {/* Topics */}
-                <div className="mb-8">
-                  <label className="block text-matrix-green-primary font-semibold mb-3">
-                    Topics of interest
-                  </label>
-                  <div className="flex flex-wrap gap-2.5">
-                    {topicOptions.map((topic) => (
-                      <button
-                        key={topic}
-                        onClick={() => toggleTopic(topic)}
+                            {/* Topics */}
+                            <div className="mb-8">
+                                <label className="block text-matrix-green-primary font-semibold mb-3">
+                                    Topics of interest
+                                </label>
+                                <div className="flex flex-wrap gap-2.5">
+                                    {topicOptions.map((topic) => (
+                                        <button
+                                            key={topic}
+                                            onClick={() => toggleTopic(topic)}
                         className={`px-3.5 py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
                           preferences.topics.includes(topic)
                             ? "bg-gradient-matrix text-black"
                             : "bg-matrix-green-subtle text-matrix-green-primary border border-matrix-green-primary/30"
-                        }`}
-                      >
-                        {topic}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                                                }`}
+                                        >
+                                            {topic}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
-                {/* Geography */}
-                <div className="mb-8">
-                  <label className="block text-matrix-green-primary font-semibold mb-3">
-                    Geographic focus
-                  </label>
-                  <select
-                    value={preferences.geography}
-                    onChange={(e) =>
+                            {/* Geography */}
+                            <div className="mb-8">
+                                <label className="block text-matrix-green-primary font-semibold mb-3">
+                                    Geographic focus
+                                </label>
+                                <select
+                                    value={preferences.geography}
+                                    onChange={(e) =>
                       setPreferences({
                         ...preferences,
                         geography: e.target.value,
                       })
-                    }
-                    className="input-field"
-                  >
-                    <option value="global">Global (Any Location)</option>
-                    <option value="restricted">High-Risk Regions Only</option>
-                    <option value="academic">Academic Institutions</option>
+                                    }
+                                    className="input-field"
+                                >
+                                    <option value="global">Global (Any Location)</option>
+                                    <option value="restricted">High-Risk Regions Only</option>
+                                    <option value="academic">Academic Institutions</option>
                     <option value="network-school">
                       Network School Residents
                     </option>
-                  </select>
-                </div>
+                                </select>
+                            </div>
 
-                {/* Funding Amount */}
-                <div className="mb-8">
-                  <label className="block text-matrix-green-primary font-semibold mb-3">
-                    Funding amount (ZEC)
-                  </label>
-                  <input
-                    type="number"
-                    value={preferences.amount}
-                    onChange={(e) =>
+                            {/* Funding Amount */}
+                            <div className="mb-8">
+                                <label className="block text-matrix-green-primary font-semibold mb-3">
+                                    Funding amount (ZEC)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={preferences.amount}
+                                    onChange={(e) =>
                       setPreferences({
                         ...preferences,
                         amount: e.target.value,
                       })
-                    }
-                    placeholder="Enter amount in ZEC"
-                    className="input-field"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
+                                    }
+                                    placeholder="Enter amount in ZEC"
+                                    className="input-field"
+                                    min="0"
+                                    step="0.01"
+                                />
+                            </div>
 
-                {/* Recurring */}
-                <div className="mb-8">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={preferences.recurring}
-                      onChange={(e) =>
+                            {/* Recurring */}
+                            <div className="mb-8">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={preferences.recurring}
+                                        onChange={(e) =>
                         setPreferences({
                           ...preferences,
                           recurring: e.target.checked,
                         })
-                      }
-                      className="w-5 h-5 accent-matrix-green-primary"
-                    />
+                                        }
+                                        className="w-5 h-5 accent-matrix-green-primary"
+                                    />
                     <span className="text-gray-300">
                       Make this a recurring donation
                     </span>
-                  </label>
-                </div>
+                                </label>
+                            </div>
 
                 {/* Free-form intent prompt */}
                 <div className="mb-8">
@@ -596,7 +597,7 @@ export default function PatronPortal() {
                   />
                 </div>
 
-                {/* Submit */}
+                            {/* Submit */}
                 {error && (
                   <div className="mb-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
                     <p className="text-red-400 text-sm">{error}</p>
@@ -798,23 +799,23 @@ export default function PatronPortal() {
                       })}
                   </div>
                 )}
-              </motion.div>
+                        </motion.div>
             </div>
-          ) : (
-            /* Step 2: Matched Recipients */
-            <div>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mb-8 flex justify-between items-center"
-              >
-                <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary">
-                  Matched recipients ({matches.length})
-                </h2>
-                <button onClick={() => setStep(1)} className="btn-outline">
-                  ← Adjust Preferences
-                </button>
-              </motion.div>
+                    ) : (
+                        /* Step 2: Matched Recipients */
+                        <div>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="mb-8 flex justify-between items-center"
+                            >
+                                <h2 className="text-xl md:text-2xl font-semibold text-matrix-green-primary">
+                                    Matched recipients ({matches.length})
+                                </h2>
+                                <button onClick={() => setStep(1)} className="btn-outline">
+                                    ← Adjust Preferences
+                                </button>
+                            </motion.div>
 
               {error && (
                 <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
@@ -830,52 +831,52 @@ export default function PatronPortal() {
                 </div>
               )}
 
-              <div className="grid gap-6">
-                {matches.map((match, idx) => (
-                  <motion.div
+                            <div className="grid gap-6">
+                                {matches.map((match, idx) => (
+                                    <motion.div
                     key={match.ipfsHash}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="glass-card p-6 hover:scale-[1.01] transition-transform border border-matrix-green-primary/25"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-xl font-bold font-mono text-matrix-green-primary">
-                            {match.pseudonym}
-                          </h3>
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.1 }}
+                                        className="glass-card p-6 hover:scale-[1.01] transition-transform border border-matrix-green-primary/25"
+                                    >
+                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <h3 className="text-xl font-bold font-mono text-matrix-green-primary">
+                                                        {match.pseudonym}
+                                                    </h3>
                           {match.verificationFlags.humanness && (
-                            <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30">
-                              Verified
-                            </span>
-                          )}
+                                                        <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30">
+                                                            Verified
+                                                        </span>
+                                                    )}
                           {match.verificationFlags.nsResident && (
-                            <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30 font-mono">
-                              NS
-                            </span>
-                          )}
+                                                        <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30 font-mono">
+                                                            NS
+                                                        </span>
+                                                    )}
                           <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30">
                             {match.matchScore}% match
                           </span>
-                        </div>
+                                                </div>
 
                         <p className="text-gray-400 mb-2 text-sm italic">
                           {match.matchReason}
                         </p>
 
-                        <p className="text-gray-400 mb-3">{match.bio}</p>
+                                                <p className="text-gray-400 mb-3">{match.bio}</p>
 
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {match.skills.map((skill) => (
-                            <span
-                              key={skill}
-                              className="px-3 py-1 bg-black/50 text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/20"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
+                                                <div className="flex flex-wrap gap-2 mb-3">
+                                                    {match.skills.map((skill) => (
+                                                        <span
+                                                            key={skill}
+                                                            className="px-3 py-1 bg-black/50 text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/20"
+                                                        >
+                                                            {skill}
+                                                        </span>
+                                                    ))}
+                                                </div>
                         {match.fundingNeed && (
                           <p className="text-xs text-gray-400 mb-3">
                             <span className="text-matrix-green-primary">
@@ -885,13 +886,13 @@ export default function PatronPortal() {
                           </p>
                         )}
 
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span>📍 {match.location}</span>
-                          <span>🏷️ {match.category}</span>
-                        </div>
-                      </div>
+                                                <div className="flex items-center gap-4 text-sm text-gray-500">
+                                                    <span>📍 {match.location}</span>
+                                                    <span>🏷️ {match.category}</span>
+                                                </div>
+                                            </div>
 
-                      <div className="flex md:flex-col gap-3">
+                                            <div className="flex md:flex-col gap-3">
                         {quoteResults[match.ipfsHash] ? (
                           <div className="space-y-3">
                             <div className="glass-card p-4 border border-matrix-green-primary/30">
@@ -965,57 +966,59 @@ export default function PatronPortal() {
                                   parseFloat(preferences.amount)
                                 )}`
                               )}
-                            </button>
-                            <button className="btn-outline text-sm px-6">
-                              View Details
-                            </button>
+                                                </button>
+                                                <button className="btn-outline text-sm px-6">
+                                                    View Details
+                                                </button>
                           </>
                         )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
-          )}
-        </div>
-      </div>
       {/* Direct funding modal */}
       {directOpen && directProfile && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
           <div className="glass-card max-w-md w-full mx-4 p-6 border border-matrix-green-primary/40">
             <h3 className="text-lg font-semibold text-matrix-green-primary mb-2">
               Fund{" "}
-              {directProfile.profile?.persona?.pseudonym ?? "recipient"} directly
+              {directProfile.profile?.persona?.pseudonym ?? "builder"} privately
             </h3>
             <p className="text-xs text-gray-400 mb-4">
-              This sends ZEC to the recipient&apos;s shielded address from your Zcash
-              wallet (mocked for now). In production, this will be wired to a
-              local WASM wallet (e.g. zingolib).
+              Scan the QR code with your Zcash wallet to send a shielded
+              donation directly to this builder. No on‑chain link is created
+              here; only the shielded Zcash layer sees the payment.
             </p>
+            {directProfile.profile?.paymentAddress && (
+              <div className="mb-4 flex flex-col items-center gap-2">
+                <div className="bg-white p-3 rounded">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+                      directProfile.profile.paymentAddress
+                    )}`}
+                    alt="Zcash shielded address QR"
+                    className="w-40 h-40"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 font-mono break-all text-center">
+                  {directProfile.profile.paymentAddress}
+                </p>
+              </div>
+            )}
             <div className="mb-4">
               <label className="block text-matrix-green-primary font-semibold mb-1 text-sm">
-                Amount (ZEC)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={directAmount}
-                onChange={(e) => setDirectAmount(e.target.value)}
-                className="input-field"
-                placeholder="e.g. 5"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-matrix-green-primary font-semibold mb-1 text-sm">
-                Reason (optional)
+                Note for your impact SBT (optional)
               </label>
               <textarea
                 value={directReason}
                 onChange={(e) => setDirectReason(e.target.value)}
                 className="input-field min-h-20"
-                placeholder="Why you are funding this recipient..."
+                placeholder="Why you are funding this builder... (stored in your SBT metadata)"
               />
             </div>
             {directError && (
@@ -1025,12 +1028,14 @@ export default function PatronPortal() {
             )}
             {directTxId && (
               <div className="mb-3 p-3 rounded border border-matrix-green-primary/40 bg-black/40 text-xs text-matrix-green-primary">
-                <p className="font-mono break-all">TxID: {directTxId}</p>
+                <p className="font-mono break-all">
+                  Demo Zcash tx reference: {directTxId}
+                </p>
               </div>
             )}
             {directSbtId && (
               <div className="mb-3 p-3 rounded border border-matrix-green-primary/40 bg-black/30 text-[11px] text-matrix-green-primary">
-                Impact badge issued: {directSbtId}
+                Impact SBT minted on NEAR (demo): {directSbtId}
               </div>
             )}
             <div className="flex gap-3 mt-4">
@@ -1047,16 +1052,16 @@ export default function PatronPortal() {
                 Cancel
               </button>
               <button
-                onClick={handleConfirmDirectFunding}
+                onClick={handleMintDirectSbt}
                 disabled={directLoading}
                 className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {directLoading ? "Sending..." : "Send ZEC"}
+                {directLoading ? "Minting..." : "Mint impact SBT"}
               </button>
             </div>
           </div>
         </div>
       )}
-    </main>
-  );
+        </main>
+    );
 }

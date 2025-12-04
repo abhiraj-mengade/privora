@@ -1,9 +1,10 @@
 /**
  * NEAR AI Cloud API utilities
  * Handles PII stripping and intelligent matching
+ * Uses Next.js API route to avoid CORS issues
  */
 
-const NEAR_AI_API_URL = 'https://cloud-api.near.ai/v1/chat/completions';
+const NEAR_AI_API_ROUTE = '/api/near-ai';
 const NEAR_AI_MODEL = 'deepseek-ai/DeepSeek-V3.1';
 
 export interface PIIStrippedProfile {
@@ -34,11 +35,6 @@ export async function stripPII(rawProfile: {
         location: boolean;
     };
 }): Promise<PIIStrippedProfile> {
-    const apiKey = process.env.NEXT_PUBLIC_NEAR_AI_API_KEY;
-    if (!apiKey) {
-        throw new Error('NEAR AI API key not configured. Please set NEXT_PUBLIC_NEAR_AI_API_KEY');
-    }
-
     const prompt = `You are a privacy-preserving data processor. Your task is to strip all Personally Identifiable Information (PII) from a user profile while preserving the essential information needed for matching donors.
 
 Input profile:
@@ -73,11 +69,10 @@ Return ONLY a valid JSON object with this exact structure:
 Do not include any explanation, only the JSON object.`;
 
     try {
-        const response = await fetch(NEAR_AI_API_URL, {
+        const response = await fetch(NEAR_AI_API_ROUTE, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
                 model: NEAR_AI_MODEL,
@@ -92,8 +87,14 @@ Do not include any explanation, only the JSON object.`;
         });
 
         if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`NEAR AI API error: ${response.status} - ${error}`);
+            let errorText = 'Unknown error';
+            try {
+                const errorData = await response.json();
+                errorText = errorData.error || JSON.stringify(errorData);
+            } catch {
+                errorText = await response.text();
+            }
+            throw new Error(`NEAR AI API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
@@ -150,11 +151,6 @@ export async function findMatchingPersonas(
     intent: DonorIntent,
     availablePersonas: Array<{ ipfsHash: string; profile: PIIStrippedProfile }>
 ): Promise<MatchedPersona[]> {
-    const apiKey = process.env.NEXT_PUBLIC_NEAR_AI_API_KEY;
-    if (!apiKey) {
-        throw new Error('NEAR AI API key not configured');
-    }
-
     if (availablePersonas.length === 0) {
         return [];
     }
@@ -201,11 +197,10 @@ Return ONLY a valid JSON array with this exact structure:
 Include only personas with matchScore >= 50, sorted by matchScore descending.`;
 
     try {
-        const response = await fetch(NEAR_AI_API_URL, {
+        const response = await fetch(NEAR_AI_API_ROUTE, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
                 model: NEAR_AI_MODEL,
@@ -220,8 +215,14 @@ Include only personas with matchScore >= 50, sorted by matchScore descending.`;
         });
 
         if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`NEAR AI API error: ${response.status} - ${error}`);
+            let errorText = 'Unknown error';
+            try {
+                const errorData = await response.json();
+                errorText = errorData.error || JSON.stringify(errorData);
+            } catch {
+                errorText = await response.text();
+            }
+            throw new Error(`NEAR AI API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
