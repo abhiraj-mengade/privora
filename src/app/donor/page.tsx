@@ -22,6 +22,7 @@ import {
   recordFunding,
   type FundingMap,
 } from "@/lib/fundingStats";
+import { useSigner, useAddress, ConnectWallet } from "@thirdweb-dev/react";
 
 interface DonorPreferences {
     topics: string[];
@@ -79,11 +80,14 @@ export default function PatronPortal() {
   const [directReason, setDirectReason] = useState("");
   const [directError, setDirectError] = useState<string | null>(null);
   const [directLoading, setDirectLoading] = useState(false);
-  const [directTxId, setDirectTxId] = useState<string | null>(null);
   const [directSbtId, setDirectSbtId] = useState<string | null>(null);
 
   // Browse all recipients filters
   const [filterStartupSociety, setFilterStartupSociety] = useState(false);
+
+  // Thirdweb wallet for SBT minting
+  const thirdwebSigner = useSigner();
+  const thirdwebAddress = useAddress();
 
     const topicOptions = [
     "Zero-Knowledge Proofs",
@@ -229,7 +233,6 @@ export default function PatronPortal() {
     setDirectProfile(entry);
     setDirectReason("");
     setDirectError(null);
-    setDirectTxId(null);
     setDirectSbtId(null);
     setDirectOpen(true);
   };
@@ -239,9 +242,12 @@ export default function PatronPortal() {
   // the patron has funded off‑chain.
   const handleMintDirectSbt = async () => {
     if (!directProfile) return;
+    if (!thirdwebSigner || !thirdwebAddress) {
+      setDirectError("Please connect your EVM wallet to mint an impact SBT");
+      return;
+    }
     setDirectLoading(true);
     setDirectError(null);
-    setDirectTxId(null);
     try {
       const recipientAddress: string | undefined =
         directProfile.profile.paymentAddress;
@@ -251,37 +257,37 @@ export default function PatronPortal() {
         );
       }
 
-      // For the demo, fabricate a txId locally. In production, the patron
-      // would paste the real Zcash txid after sending from their wallet.
-      const txId = await sendDirectShieldedMock(
-        recipientAddress,
-        0,
-        directReason
-          ? `Privora direct grant (off‑chain payment): ${directReason}`
-          : "Privora direct grant (off‑chain payment)"
-      );
-      setDirectTxId(txId);
+      // Derive causeTag from builder's category or use a default
+      const causeTag =
+        directProfile.profile?.persona?.category ||
+        directProfile.profile?.category ||
+        "Privacy-preserving philanthropy";
+
       try {
-        const sbt = await issueImpactSBT({
-          donorAddress: donorZAddress,
-          recipientPseudonym:
-            directProfile.profile?.persona?.pseudonym ?? "recipient",
-          amountZec: 0,
-          txId,
-          memo: directReason,
-        });
+        const sbt = await issueImpactSBT(
+          {
+            donorAddress: thirdwebAddress,
+            recipientPseudonym:
+              directProfile.profile?.persona?.pseudonym ?? "builder",
+            causeTag,
+            amountZec: 0, // Amount is private (shielded Zcash), not stored on-chain
+            memo: directReason || undefined,
+          },
+          thirdwebSigner
+        );
         setDirectSbtId(sbt.tokenId);
+        // Record funding locally (without txId since it's private)
+        setFunding((prev) =>
+          recordFunding(directProfile.ipfsHash, 0, sbt.tokenId, "direct")
+        );
       } catch (err) {
         console.error("Failed to mint SBT for direct donation:", err);
+        throw err;
       }
-      // Record funding locally
-      setFunding((prev) =>
-        recordFunding(directProfile.ipfsHash, 0, txId, "direct")
-      );
     } catch (err) {
-      console.error("Error sending direct donation:", err);
+      console.error("Error minting impact SBT:", err);
       setDirectError(
-        err instanceof Error ? err.message : "Failed to send direct donation"
+        err instanceof Error ? err.message : "Failed to mint impact SBT"
       );
     } finally {
       setDirectLoading(false);
@@ -416,14 +422,19 @@ export default function PatronPortal() {
         );
         try {
           const amountZec = parseFloat(preferences.amount);
-          if (!isNaN(amountZec) && status.txId) {
-            await issueImpactSBT({
-              donorAddress: donorZAddress,
-              recipientPseudonym: match.pseudonym,
-              amountZec,
-              txId: status.txId,
-              memo: match.matchReason,
-            });
+          if (!isNaN(amountZec) && thirdwebSigner && thirdwebAddress) {
+            // Derive causeTag from match reason or builder category
+            const causeTag = match.matchReason || match.category || "Privacy-preserving philanthropy";
+            await issueImpactSBT(
+              {
+                donorAddress: thirdwebAddress,
+                recipientPseudonym: match.pseudonym,
+                causeTag,
+                amountZec, // Amount is private (shielded Zcash), encrypted in SBT
+                memo: match.matchReason,
+              },
+              thirdwebSigner
+            );
           }
         } catch (err) {
           console.error("Failed to issue impact SBT:", err);
@@ -1021,21 +1032,31 @@ export default function PatronPortal() {
                 placeholder="Why you are funding this builder... (stored in your SBT metadata)"
               />
             </div>
+            {!thirdwebAddress && (
+              <div className="mb-4 p-4 rounded border border-matrix-green-primary/40 bg-black/40">
+                <p className="text-xs text-gray-400 mb-3">
+                  Connect your EVM wallet (Sepolia) to mint an impact SBT after
+                  funding this builder.
+                </p>
+                <div className="flex justify-center">
+                  <ConnectWallet theme="dark" btnTitle="Connect EVM wallet" />
+                </div>
+              </div>
+            )}
+            {thirdwebAddress && (
+              <div className="mb-3 text-[10px] text-gray-500 text-center font-mono">
+                Connected: {thirdwebAddress.slice(0, 6)}…
+                {thirdwebAddress.slice(-4)}
+              </div>
+            )}
             {directError && (
               <div className="mb-3 p-3 rounded border border-red-500/40 bg-red-900/20 text-xs text-red-300">
                 {directError}
               </div>
             )}
-            {directTxId && (
-              <div className="mb-3 p-3 rounded border border-matrix-green-primary/40 bg-black/40 text-xs text-matrix-green-primary">
-                <p className="font-mono break-all">
-                  Demo Zcash tx reference: {directTxId}
-                </p>
-              </div>
-            )}
             {directSbtId && (
               <div className="mb-3 p-3 rounded border border-matrix-green-primary/40 bg-black/30 text-[11px] text-matrix-green-primary">
-                Impact SBT minted on NEAR (demo): {directSbtId}
+                Impact SBT minted on Sepolia: {directSbtId}
               </div>
             )}
             <div className="flex gap-3 mt-4">
@@ -1044,20 +1065,28 @@ export default function PatronPortal() {
                   setDirectOpen(false);
                   setDirectProfile(null);
                   setDirectError(null);
-                  setDirectTxId(null);
                   setDirectSbtId(null);
                 }}
                 className="btn-outline flex-1"
               >
                 Cancel
               </button>
-              <button
-                onClick={handleMintDirectSbt}
-                disabled={directLoading}
-                className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {directLoading ? "Minting..." : "Mint impact SBT"}
-              </button>
+              {thirdwebAddress ? (
+                <button
+                  onClick={handleMintDirectSbt}
+                  disabled={directLoading}
+                  className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {directLoading ? "Minting..." : "Mint impact SBT"}
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="btn-primary flex-1 opacity-50 cursor-not-allowed"
+                >
+                  Connect wallet to mint
+                </button>
+              )}
             </div>
           </div>
         </div>
