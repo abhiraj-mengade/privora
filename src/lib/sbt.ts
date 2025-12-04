@@ -11,6 +11,7 @@ export interface ImpactSBTPayload {
   causeTag: string; // High-level cause (e.g., "anti-censorship tools")
   amountZec: number; // Amount in ZEC (will be converted to zatoshis)
   memo?: string; // Optional high-level memo (no payment details)
+  ipfsHash: string; // IPFS hash of the builder's profile (for tracking funded status)
 }
 
 export interface ImpactSBT {
@@ -27,9 +28,12 @@ export interface ImpactSBT {
 }
 
 const impactSbtAbi = [
-  "function mintImpact(address donor, string calldata builderPseudonym, string calldata causeTag, string calldata memo, uint128 amountZats) external returns (uint256)",
+  "function mintImpact(address donor, string calldata builderPseudonym, string calldata causeTag, string calldata memo, uint128 amountZats, string calldata ipfsHash) external returns (uint256)",
   "function getImpact(uint256 tokenId) external view returns (address donor, string memory builderPseudonym, string memory causeTag, string memory memo, uint256 issuedAt)",
   "function balanceOf(address ownerAddr) external view returns (uint256)",
+  "function isBuilderFunded(string calldata ipfsHash) external view returns (bool)",
+  "function getFundingCount(string calldata ipfsHash) external view returns (uint256)",
+  "function getTotalFundingAmount(string calldata ipfsHash) external view returns (uint256)",
 ];
 
 function getImpactSbtEnv() {
@@ -68,7 +72,8 @@ export async function issueImpactSBT(
     payload.recipientPseudonym,
     payload.causeTag,
     payload.memo || "",
-    amountZatsUint128
+    amountZatsUint128,
+    payload.ipfsHash
   );
   const receipt = await tx.wait();
 
@@ -103,6 +108,41 @@ export async function issueImpactSBT(
       issuedAt: Date.now(),
     },
   };
+}
+
+/**
+ * Check if a builder (by IPFS hash) has been funded on-chain.
+ */
+export async function checkBuilderFundedStatus(
+  ipfsHash: string,
+  provider?: providers.Provider
+): Promise<{ funded: boolean; count: number; totalAmountZats: number }> {
+  const contractAddress = getImpactSbtEnv();
+  
+  // Use provided provider or create a read-only provider
+  const rpcProvider = provider || new providers.JsonRpcProvider(
+    process.env.NEXT_PUBLIC_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/demo"
+  );
+  
+  const contract = new Contract(contractAddress, impactSbtAbi, rpcProvider);
+  
+  try {
+    const [funded, count, totalAmount] = await Promise.all([
+      contract.isBuilderFunded(ipfsHash),
+      contract.getFundingCount(ipfsHash),
+      contract.getTotalFundingAmount(ipfsHash),
+    ]);
+    
+    return {
+      funded: funded as boolean,
+      count: count.toNumber(),
+      totalAmountZats: totalAmount.toNumber(),
+    };
+  } catch (error) {
+    console.error("Error checking builder funded status:", error);
+    // Return false on error (assume not funded if we can't check)
+    return { funded: false, count: 0, totalAmountZats: 0 };
+  }
 }
 
 

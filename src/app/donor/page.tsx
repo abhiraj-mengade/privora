@@ -16,7 +16,7 @@ import {
   checkQuoteStatus,
   type ZcashTransactionResult,
 } from "@/lib/zcash";
-import { issueImpactSBT } from "@/lib/sbt";
+import { issueImpactSBT, checkBuilderFundedStatus } from "@/lib/sbt";
 import {
   loadFundingStats,
   recordFunding,
@@ -69,6 +69,11 @@ export default function PatronPortal() {
 
   // Local funding stats per recipient (demo only, not on-chain)
   const [funding, setFunding] = useState<FundingMap>({});
+  
+  // On-chain funded status per builder (keyed by IPFS hash)
+  const [fundedStatus, setFundedStatus] = useState<
+    Record<string, { funded: boolean; count: number; totalAmountZats: number }>
+  >({});
 
   // Direct funding modal state (from "Browse all recipients" section)
   const [directOpen, setDirectOpen] = useState(false);
@@ -159,6 +164,21 @@ export default function PatronPortal() {
         ) as Array<{ ipfsHash: string; profile: any }>;
         setAllProfiles(valid);
         setFunding(loadFundingStats());
+
+        // Check on-chain funded status for each builder
+        void (async () => {
+          const statusMap: Record<string, { funded: boolean; count: number; totalAmountZats: number }> = {};
+          for (const { ipfsHash } of valid) {
+            try {
+              const status = await checkBuilderFundedStatus(ipfsHash);
+              statusMap[ipfsHash] = status;
+            } catch (err) {
+              console.error(`Failed to check funded status for ${ipfsHash}:`, err);
+              statusMap[ipfsHash] = { funded: false, count: 0, totalAmountZats: 0 };
+            }
+          }
+          setFundedStatus(statusMap);
+        })();
 
         // Kick off async verification of Reclaim proofs for each profile
         void (async () => {
@@ -277,6 +297,7 @@ export default function PatronPortal() {
             causeTag,
             amountZec: 0, // Amount is private (shielded Zcash), not stored on-chain
             memo: directReason || undefined,
+            ipfsHash: directProfile.ipfsHash,
           },
           thirdwebSigner
         );
@@ -285,6 +306,16 @@ export default function PatronPortal() {
         setFunding((prev) =>
           recordFunding(directProfile.ipfsHash, 0, sbt.tokenId, "direct")
         );
+        // Update on-chain funded status (refresh from chain for accurate amount)
+        try {
+          const updatedStatus = await checkBuilderFundedStatus(directProfile.ipfsHash);
+          setFundedStatus((prev) => ({
+            ...prev,
+            [directProfile.ipfsHash]: updatedStatus,
+          }));
+        } catch (err) {
+          console.error("Failed to refresh funded status:", err);
+        }
       } catch (err) {
         console.error("Failed to mint SBT for direct donation:", err);
         throw err;
@@ -449,6 +480,7 @@ export default function PatronPortal() {
                 causeTag,
                 amountZec, // Amount is private (shielded Zcash), encrypted in SBT
                 memo: match.matchReason,
+                ipfsHash: match.ipfsHash,
               },
               thirdwebSigner
             );
@@ -471,6 +503,16 @@ export default function PatronPortal() {
             "ai"
           )
         );
+        // Update on-chain funded status (refresh from chain for accurate amount)
+        try {
+          const updatedStatus = await checkBuilderFundedStatus(match.ipfsHash);
+          setFundedStatus((prev) => ({
+            ...prev,
+            [match.ipfsHash]: updatedStatus,
+          }));
+        } catch (err) {
+          console.error("Failed to refresh funded status:", err);
+        }
         setSendingDonation(null);
       }
     } catch (err) {
@@ -683,19 +725,27 @@ export default function PatronPortal() {
                       const skills: string[] = persona.skills ?? [];
                       const proofs = profile.proofs ?? {};
                       const stats = funding[ipfsHash];
+                      const funded = fundedStatus[ipfsHash];
                       return (
                         <div
                           key={ipfsHash}
                           className="border border-matrix-green-primary/25 rounded-lg p-4 text-left"
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <p className="font-mono text-sm text-matrix-green-primary">
-                                {persona.pseudonym ?? "Anonymous"}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {persona.category ?? "Uncategorized"}
-                              </p>
+                            <div className="flex items-center gap-2">
+                              <div>
+                                <p className="font-mono text-sm text-matrix-green-primary">
+                                  {persona.pseudonym ?? "Anonymous"}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {persona.category ?? "Uncategorized"}
+                                </p>
+                              </div>
+                              {funded?.funded && (
+                                <span className="px-2 py-0.5 rounded-full border border-yellow-400/60 text-[10px] text-yellow-400 bg-yellow-400/10">
+                                  ✓ Funded ({funded.count}x) • {formatZEC(funded.totalAmountZats / 1e8)} ZEC
+                                </span>
+                              )}
                             </div>
                             <span className="text-[10px] text-gray-500 break-all max-w-[120px]">
                               {ipfsHash}
@@ -751,17 +801,20 @@ export default function PatronPortal() {
                               {persona.fundingNeed}
                             </p>
                           )}
-                          {persona.fundingNeed && (
-                            <p className="text-[11px] text-gray-400 mb-1 line-clamp-2">
-                              <span className="text-matrix-green-primary">
-                                Funding need:
+                          {funded?.funded && (
+                            <p className="text-[11px] text-matrix-green-primary/80 mb-2">
+                              <span className="text-yellow-400">Total funding received:</span>{" "}
+                              <span className="font-mono text-matrix-green-primary">
+                                {formatZEC(funded.totalAmountZats / 1e8)}
                               </span>{" "}
-                              {persona.fundingNeed}
+                              <span className="text-gray-500">
+                                ({funded.count} {funded.count === 1 ? 'grant' : 'grants'})
+                              </span>
                             </p>
                           )}
-                          {stats && stats.totalZec > 0 && (
+                          {stats && stats.totalZec > 0 && !funded?.funded && (
                             <p className="text-[11px] text-matrix-green-primary/80 mb-2">
-                              Funded via Privora:{" "}
+                              Funded via Privora (local):{" "}
                               <span className="font-mono">
                                 {stats.totalZec.toFixed(4)} ZEC
                               </span>{" "}
@@ -845,6 +898,7 @@ export default function PatronPortal() {
                             {societyProfiles.map((entry) => {
                               const persona = entry.profile?.persona ?? {};
                               const ipfsHash = entry.ipfsHash;
+                              const funded = fundedStatus[ipfsHash];
                               return (
                                 <div
                                   key={ipfsHash}
@@ -852,9 +906,16 @@ export default function PatronPortal() {
                                   onClick={() => openDirectModal(entry)}
                                 >
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-mono text-matrix-green-primary truncate">
-                                      {persona.pseudonym ?? "Anonymous"}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-xs font-mono text-matrix-green-primary truncate">
+                                        {persona.pseudonym ?? "Anonymous"}
+                                      </p>
+                                      {funded?.funded && (
+                                        <span className="text-[9px] text-yellow-400">
+                                          ✓ {formatZEC(funded.totalAmountZats / 1e8)} ({funded.count})
+                                        </span>
+                                      )}
+                                    </div>
                                     <p className="text-[10px] text-gray-500 truncate">
                                       {persona.category ?? "Uncategorized"}
                                     </p>
@@ -920,7 +981,7 @@ export default function PatronPortal() {
                                     >
                                         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                                             <div className="flex-1">
-                                                <div className="flex items-center gap-3 mb-3">
+                                                <div className="flex items-center gap-3 mb-3 flex-wrap">
                                                     <h3 className="text-xl font-bold font-mono text-matrix-green-primary">
                                                         {match.pseudonym}
                                                     </h3>
@@ -932,6 +993,11 @@ export default function PatronPortal() {
                           {match.verificationFlags.nsResident && (
                                                         <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30 font-mono">
                                                             NS
+                                                        </span>
+                                                    )}
+                          {fundedStatus[match.ipfsHash]?.funded && (
+                                                        <span className="px-2 py-1 bg-yellow-400/10 text-yellow-400 text-xs rounded-full border border-yellow-400/60">
+                                                            ✓ Funded ({fundedStatus[match.ipfsHash].count}x) • {formatZEC(fundedStatus[match.ipfsHash].totalAmountZats / 1e8)}
                                                         </span>
                                                     )}
                           <span className="px-2 py-1 bg-matrix-green-subtle text-matrix-green-primary text-xs rounded-full border border-matrix-green-primary/30">
@@ -955,6 +1021,12 @@ export default function PatronPortal() {
                                                         </span>
                                                     ))}
                                                 </div>
+                        {fundedStatus[match.ipfsHash]?.funded && (
+                          <p className="text-xs text-yellow-400 mb-3 font-mono">
+                            <span className="text-matrix-green-primary">Total funding received:</span>{" "}
+                            {formatZEC(fundedStatus[match.ipfsHash].totalAmountZats / 1e8)} ({fundedStatus[match.ipfsHash].count} {fundedStatus[match.ipfsHash].count === 1 ? 'grant' : 'grants'})
+                          </p>
+                        )}
                         {match.fundingNeed && (
                           <p className="text-xs text-gray-400 mb-3">
                             <span className="text-matrix-green-primary">
