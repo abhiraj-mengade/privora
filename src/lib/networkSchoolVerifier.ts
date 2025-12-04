@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { ethers, providers, Contract, utils } from "ethers";
 
 export interface NetworkSchoolProof {
   contractAddress: string;
@@ -30,12 +30,12 @@ export async function verifyNetworkSchoolProof(): Promise<NetworkSchoolProof> {
   }
 
   const { contract, chainId } = getEnv();
-  const provider = new ethers.BrowserProvider((window as any).ethereum);
-  const signer = await provider.getSigner();
+  const provider = new providers.Web3Provider((window as any).ethereum);
+  const signer = provider.getSigner();
 
   let network = await provider.getNetwork();
-  if (network.chainId !== chainId) {
-    const targetChainHex = ethers.toBeHex(chainId);
+  if (network.chainId.toString() !== chainId.toString()) {
+    const targetChainHex = utils.hexValue(chainId);
     try {
       await (window as any).ethereum.request({
         method: "wallet_switchEthereumChain",
@@ -47,7 +47,7 @@ export async function verifyNetworkSchoolProof(): Promise<NetworkSchoolProof> {
       );
     }
     network = await provider.getNetwork();
-    if (network.chainId !== chainId) {
+    if (network.chainId.toString() !== chainId.toString()) {
       throw new Error(
         `Wallet not connected to required chain ${chainId.toString()}`
       );
@@ -56,16 +56,15 @@ export async function verifyNetworkSchoolProof(): Promise<NetworkSchoolProof> {
 
   const memberAddress = await signer.getAddress();
   const claimant = memberAddress; // For now claimant == member
-  const nonceBytes = ethers.randomBytes(32);
-  const nonce = ethers.hexlify(nonceBytes);
+  const nonceBytes = ethers.utils.randomBytes(32);
+  const nonce = ethers.utils.hexlify(nonceBytes);
 
-  const messageHash = ethers.solidityPackedKeccak256(
+  const messageHash = utils.solidityKeccak256(
     ["address", "uint256", "address", "address", "bytes32"],
     [contract, chainId, claimant, memberAddress, nonce]
   );
-
-  const signature = await signer.signMessage(ethers.getBytes(messageHash));
-  const contractInstance = new ethers.Contract(contract, networkSchoolAbi, signer);
+  const signature = await signer.signMessage(utils.arrayify(messageHash));
+  const contractInstance = new Contract(contract, networkSchoolAbi, signer);
   const tx = await contractInstance.verifyMembership(memberAddress, nonce, signature);
   const receipt = await tx.wait();
 

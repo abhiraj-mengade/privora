@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { ethers, providers, Contract } from "ethers";
 
 export interface IndexedPersona {
   owner: string;
@@ -26,10 +26,10 @@ export async function registerPersonaOnChain(ipfsHash: string): Promise<void> {
   }
 
   const contractAddress = getRegistryEnv();
-  const provider = new ethers.BrowserProvider((window as any).ethereum);
-  const signer = await provider.getSigner();
+  const provider = new providers.Web3Provider((window as any).ethereum);
+  const signer = provider.getSigner();
 
-  const contract = new ethers.Contract(contractAddress, registryAbi, signer);
+  const contract = new Contract(contractAddress, registryAbi, signer);
   const tx = await contract.registerMyPersona(ipfsHash);
   await tx.wait();
 }
@@ -43,9 +43,9 @@ export async function fetchAllIndexedPersonas(): Promise<IndexedPersona[]> {
     process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ??
     "https://eth-sepolia.g.alchemy.com/v2/demo";
 
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  const provider = new providers.JsonRpcProvider(rpcUrl);
 
-  const contract = new ethers.Contract(contractAddress, registryAbi, provider);
+  const contract = new Contract(contractAddress, registryAbi, provider);
   const personas = (await contract.getAllPersonas()) as Array<{
     owner: string;
     ipfsHash: string;

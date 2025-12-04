@@ -11,6 +11,7 @@ import {
   NetworkSchoolProof,
   verifyNetworkSchoolProof,
 } from "@/lib/networkSchoolVerifier";
+import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
 
 interface BuilderProfile {
   pseudonym: string;
@@ -53,6 +54,13 @@ export default function BuilderPortal() {
   );
   const [evmAddress, setEvmAddress] = useState<string | null>(null);
   const [evmError, setEvmError] = useState<string | null>(null);
+  const thirdwebAddress = useAddress();
+
+  // Keep local display state in sync with Thirdweb's connected address
+  if (thirdwebAddress && evmAddress !== thirdwebAddress) {
+    setEvmAddress(thirdwebAddress);
+    if (evmError) setEvmError(null);
+  }
 
   const categoryOptions = [
     "Privacy Tools Developer",
@@ -202,33 +210,12 @@ export default function BuilderPortal() {
   };
 
   const handleConnectEvmWallet = async () => {
-    if (typeof window === "undefined" || !(window as any).ethereum) {
-      setEvmError(
-        "No Ethereum wallet found. Install MetaMask, Rabby, or Talisman and refresh."
-      );
-      return;
-    }
-    setEvmError(null);
-    try {
-      const eth = (window as any).ethereum;
-      const accounts: string[] = await eth.request({
-        method: "eth_requestAccounts",
-      });
-      if (!accounts || accounts.length === 0) {
-        setEvmError(
-          "No accounts returned from wallet. Create/import an account and try again."
-        );
-        return;
-      }
-      setEvmAddress(accounts[0]);
-    } catch (err: any) {
-      if (err?.code === 4001) {
-        setEvmError("Wallet connection was rejected.");
-        return;
-      }
-      setEvmError(
-        err?.message || "Failed to connect Ethereum wallet. Please try again."
-      );
+    // With Thirdweb ConnectWallet, clicking this button is just a hint.
+    // The real connection happens via the Thirdweb modal.
+    if (!thirdwebAddress) {
+      setEvmError("Use the Connect Wallet button below to link an EVM wallet.");
+    } else {
+      setEvmError(null);
     }
   };
 
@@ -559,12 +546,19 @@ export default function BuilderPortal() {
                 {evmError && (
                   <p className="text-[11px] text-red-400 mb-2">{evmError}</p>
                 )}
-                <button
-                  onClick={handleConnectEvmWallet}
-                  className="btn-outline text-xs w-full"
-                >
-                  {evmAddress ? "Reconnect Ethereum wallet" : "Connect Ethereum wallet"}
-                </button>
+                <div className="flex flex-col gap-2">
+                  <div className="w-full flex justify-center">
+                    <ConnectWallet
+                      theme="dark"
+                      btnTitle={evmAddress ? "Connected wallet" : "Connect EVM wallet"}
+                    />
+                  </div>
+                  {!evmAddress && (
+                    <p className="text-[11px] text-gray-500 text-center">
+                      Connect any EVM wallet (MetaMask, Rabby, Talisman, etc.) on Sepolia.
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-6">

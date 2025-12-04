@@ -133,6 +133,7 @@ export interface MatchedPersona {
     skills: string[];
     bio: string;
     location: string;
+    fundingNeed?: string;
     matchScore: number;
     matchReason: string;
     verificationFlags: {
@@ -165,6 +166,8 @@ export async function findMatchingPersonas(
         skills: p.profile.skills,
         bio: p.profile.bio,
         location: p.profile.location,
+        // Funding need may or may not be present; treated as optional
+        fundingNeed: (p as any).fundingNeed,
         verifications: p.profile.verificationFlags,
     }));
 
@@ -250,6 +253,8 @@ Include only personas with matchScore >= 50, sorted by matchScore descending.`;
                 skills: persona.profile.skills,
                 bio: persona.profile.bio,
                 location: persona.profile.location,
+                // Best-effort: propagate fundingNeed if present (optional).
+                fundingNeed: (persona as any).fundingNeed,
                 matchScore: match.matchScore,
                 matchReason: match.matchReason,
                 verificationFlags: persona.profile.verificationFlags,
