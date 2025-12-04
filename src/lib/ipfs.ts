@@ -110,15 +110,9 @@ function generateMockHash(data: string): string {
 
 /**
  * Retrieve persona from IPFS
+ * Uses server-side API route to bypass CORS issues
  */
 export async function retrieveFromIPFS(ipfsHash: string): Promise<unknown> {
-    // Try multiple gateways
-    const gateways = [
-        `https://ipfs.io/ipfs/${ipfsHash}`,
-        `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
-        `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`,
-    ];
-
     // Check localStorage first (for demo)
     if (typeof window !== 'undefined') {
         const cached = localStorage.getItem(`ipfs_${ipfsHash}`);
@@ -127,17 +121,30 @@ export async function retrieveFromIPFS(ipfsHash: string): Promise<unknown> {
         }
     }
 
-    for (const gateway of gateways) {
-        try {
-            const response = await fetch(gateway);
-            if (response.ok) {
-                return await response.json();
-            }
-        } catch (error) {
-            console.warn(`Failed to fetch from ${gateway}:`, error);
-        }
-    }
+    // Use server-side API route to bypass CORS
+    try {
+        const response = await fetch(`/api/ipfs/get?hash=${encodeURIComponent(ipfsHash)}`, {
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
 
-    throw new Error(`Failed to retrieve data from IPFS: ${ipfsHash}`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || `Failed to retrieve from IPFS: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Cache in localStorage for faster subsequent loads
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(`ipfs_${ipfsHash}`, JSON.stringify(data));
+        }
+        
+        return data;
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : `Failed to retrieve data from IPFS: ${ipfsHash}`;
+        throw new Error(errorMessage);
+    }
 }
 

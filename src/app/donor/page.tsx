@@ -151,8 +151,35 @@ export default function PatronPortal() {
 
         if (!hashes.length) return;
 
+        // Filter out invalid/placeholder IPFS hashes
+        const isValidIPFSHash = (hash: string): boolean => {
+          // Valid IPFS CID v0 (Qm...) should be 46 characters
+          // Valid IPFS CID v1 (bafkrei...) should start with 'baf'
+          if (!hash || hash.length < 10) return false;
+          
+          // Filter out placeholder hashes (lots of zeros)
+          if (hash.startsWith('Qm') && hash.length === 46) {
+            // Check if it's mostly zeros (placeholder)
+            const hashPart = hash.substring(2); // Remove 'Qm' prefix
+            const zeroCount = (hashPart.match(/0/g) || []).length;
+            // If more than 80% are zeros, it's likely a placeholder
+            if (zeroCount / hashPart.length > 0.8) {
+              return false;
+            }
+          }
+          
+          return true;
+        };
+
+        const validHashes = hashes.filter(isValidIPFSHash);
+        
+        if (!validHashes.length) {
+          console.warn('No valid IPFS hashes found after filtering');
+          return;
+        }
+
         const personasWithData = await Promise.all(
-          hashes.map(async (ipfsHash) => {
+          validHashes.map(async (ipfsHash) => {
             try {
               const profile = await retrieveFromIPFS(ipfsHash);
               return {
@@ -160,7 +187,11 @@ export default function PatronPortal() {
                 profile: profile as any,
               };
             } catch (err) {
-              console.error(`Failed to load persona ${ipfsHash}:`, err);
+              // Only log non-placeholder errors
+              const errorMessage = err instanceof Error ? err.message : String(err);
+              if (!errorMessage.includes('Qm0000') && !errorMessage.includes('placeholder')) {
+                console.error(`Failed to load persona ${ipfsHash}:`, err);
+              }
               return null;
             }
           })
