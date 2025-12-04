@@ -83,6 +83,7 @@ export default function PatronPortal() {
   } | null>(null);
   // Direct funding metadata (used only for SBT memo in the QR-based flow)
   const [directReason, setDirectReason] = useState("");
+  const [directAmount, setDirectAmount] = useState<string>("");
   const [directError, setDirectError] = useState<string | null>(null);
   const [directLoading, setDirectLoading] = useState(false);
   const [directSbtId, setDirectSbtId] = useState<string | null>(null);
@@ -306,6 +307,7 @@ export default function PatronPortal() {
   const openDirectModal = (entry: { ipfsHash: string; profile: any }) => {
     setDirectProfile(entry);
     setDirectReason("");
+    setDirectAmount("");
     setDirectError(null);
     setDirectSbtId(null);
     setDirectOpen(true);
@@ -336,7 +338,7 @@ export default function PatronPortal() {
             recipientPseudonym:
               directProfile.profile?.persona?.pseudonym ?? "builder",
             causeTag,
-            amountZec: 0, // Amount is private (shielded Zcash), not stored on-chain
+            amountZec: directAmount ? parseFloat(directAmount) || 0 : 0, // Amount sent (optional, for tracking)
             memo: directReason || undefined,
             ipfsHash: directProfile.ipfsHash,
           },
@@ -344,8 +346,9 @@ export default function PatronPortal() {
         );
         setDirectSbtId(sbt.tokenId);
         // Record funding locally (without txId since it's private)
+        const amountZec = directAmount ? parseFloat(directAmount) || 0 : 0;
         setFunding((prev) =>
-          recordFunding(directProfile.ipfsHash, 0, sbt.tokenId, "direct")
+          recordFunding(directProfile.ipfsHash, amountZec, sbt.tokenId, "direct")
         );
         // Update on-chain funded status (refresh from chain for accurate amount)
         try {
@@ -1264,6 +1267,18 @@ export default function PatronPortal() {
             )}
             <div className="mb-4">
               <label className="block text-matrix-green-primary font-semibold mb-1 text-sm">
+                Amount sent (ZEC) - Optional
+              </label>
+              <input
+                type="number"
+                value={directAmount}
+                onChange={(e) => setDirectAmount(e.target.value)}
+                className="input-field mb-4"
+                placeholder="Enter amount you sent (e.g., 0.5)"
+                min="0"
+                step="0.01"
+              />
+              <label className="block text-matrix-green-primary font-semibold mb-1 text-sm">
                 Note for your impact SBT (optional)
               </label>
               <textarea
@@ -1302,12 +1317,14 @@ export default function PatronPortal() {
             )}
             <div className="flex gap-3 mt-4">
               <button
-                onClick={() => {
-                  setDirectOpen(false);
-                  setDirectProfile(null);
-                  setDirectError(null);
-                  setDirectSbtId(null);
-                }}
+                  onClick={() => {
+                    setDirectOpen(false);
+                    setDirectProfile(null);
+                    setDirectReason("");
+                    setDirectAmount("");
+                    setDirectError(null);
+                    setDirectSbtId(null);
+                  }}
                 className="btn-outline flex-1"
               >
                 Cancel
