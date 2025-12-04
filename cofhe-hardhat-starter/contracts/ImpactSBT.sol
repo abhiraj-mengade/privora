@@ -7,14 +7,15 @@ import "@fhenixprotocol/cofhe-contracts/FHE.sol";
 
 /**
  * @title ImpactSBT
- * @notice Minimal FHE-enabled Soulbound Token (SBT) for Privora impact badges.
+ * @notice Privacy-preserving FHE-enabled Soulbound Token (SBT) for Privora impact badges.
  *
  * Design:
  * - Non-transferable ERC721-like token (one tokenId per donation event).
  * - Stores an encrypted uint128 `amountEnc` (ZEC * 1e8) using FHE.
  * - Stores an encrypted boolean `verifiedEnc` that can later be flipped
  *   after off-chain / Zcash-layer verification if desired.
- * - Metadata (pseudonym, memo, tx hash) is stored in cleartext for the demo.
+ * - Privacy-preserving: NO zcashTxId stored on-chain (shielded txns remain private).
+ * - Cleartext metadata: donor address, builder pseudonym, cause tag, optional memo.
  *
  * NOTE: This is a minimal demo contract, not a full ERC-721 implementation.
  * It exposes just enough surface for the frontend to mint and to let holders
@@ -26,8 +27,9 @@ contract ImpactSBT is Ownable {
     struct Impact {
         address donor;
         string builderPseudonym;
-        string zcashTxId;
-        string memo;
+        string causeTag; // e.g., "anti-censorship tools", "Network School builder"
+        string memo; // Optional high-level memo (no payment details)
+        uint256 issuedAt; // Block timestamp when minted
         euint128 amountEnc; // encrypted amount in zatoshis (ZEC * 1e8)
         ebool verifiedEnc;  // encrypted flag for additional verification
     }
@@ -45,7 +47,8 @@ contract ImpactSBT is Ownable {
         uint256 indexed tokenId,
         address indexed donor,
         string builderPseudonym,
-        string zcashTxId,
+        string causeTag,
+        uint256 issuedAt,
         euint128 amountEnc,
         ebool verifiedEnc
     );
@@ -60,16 +63,20 @@ contract ImpactSBT is Ownable {
      *      contract. For demo, we leave this open but in production you
      *      would restrict this to a trusted minter.
      *
+     * Privacy note: We do NOT store zcashTxId on-chain to preserve
+     * shielded transaction privacy. Only encrypted amount and verification
+     * flags are stored, decryptable only by the donor via CoFHE.
+     *
      * @param donor Recipient of the SBT (patron)
-     * @param builderPseudonym Pseudonymous builder name
-     * @param zcashTxId Shielded Zcash transaction identifier (opaque string)
-     * @param memo Optional memo text
-     * @param amountZats Plain amount in zatoshis (uint128)
+     * @param builderPseudonym Pseudonymous builder name (from IPFS persona)
+     * @param causeTag High-level cause tag (e.g., "anti-censorship tools")
+     * @param memo Optional memo text (high-level only, no payment details)
+     * @param amountZats Plain amount in zatoshis (uint128) - will be encrypted
      */
     function mintImpact(
         address donor,
         string calldata builderPseudonym,
-        string calldata zcashTxId,
+        string calldata causeTag,
         string calldata memo,
         uint128 amountZats
     ) external returns (uint256 tokenId) {
@@ -83,8 +90,9 @@ contract ImpactSBT is Ownable {
         Impact storage imp = _impacts[tokenId];
         imp.donor = donor;
         imp.builderPseudonym = builderPseudonym;
-        imp.zcashTxId = zcashTxId;
+        imp.causeTag = causeTag;
         imp.memo = memo;
+        imp.issuedAt = block.timestamp;
         imp.amountEnc = encAmount;
         imp.verifiedEnc = encVerified;
 
@@ -98,7 +106,8 @@ contract ImpactSBT is Ownable {
             tokenId,
             donor,
             builderPseudonym,
-            zcashTxId,
+            causeTag,
+            imp.issuedAt,
             encAmount,
             encVerified
         );
@@ -108,14 +117,16 @@ contract ImpactSBT is Ownable {
     function getImpact(uint256 tokenId) external view returns (
         address donor,
         string memory builderPseudonym,
-        string memory zcashTxId,
-        string memory memo
+        string memory causeTag,
+        string memory memo,
+        uint256 issuedAt
     ) {
         Impact storage imp = _impacts[tokenId];
         donor = imp.donor;
         builderPseudonym = imp.builderPseudonym;
-        zcashTxId = imp.zcashTxId;
+        causeTag = imp.causeTag;
         memo = imp.memo;
+        issuedAt = imp.issuedAt;
     }
 
     /// @notice Get encrypted amount (for CoFHE-based proofs).

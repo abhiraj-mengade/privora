@@ -19,7 +19,17 @@ const config: HardhatUserConfig = {
 	networks: {
 		// The plugin already provides localcofhe configuration
 
-		// Sepolia testnet configuration
+		// Sepolia testnet configuration (alias for convenience)
+		sepolia: {
+			url: process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia.publicnode.com',
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+			chainId: 11155111,
+			gasMultiplier: 1.2,
+			timeout: 60000,
+			httpHeaders: {},
+		},
+
+		// Sepolia testnet configuration (original name)
 		'eth-sepolia': {
 			url: process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia.publicnode.com',
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
@@ -43,6 +53,7 @@ const config: HardhatUserConfig = {
 	// Optional: Add Etherscan verification config
 	etherscan: {
 		apiKey: {
+			sepolia: process.env.ETHERSCAN_API_KEY || '',
 			'eth-sepolia': process.env.ETHERSCAN_API_KEY || '',
 			'arb-sepolia': process.env.ARBISCAN_API_KEY || '',
 		},

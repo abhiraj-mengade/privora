@@ -4,14 +4,15 @@ task("deploy-impact-sbt", "Deploy the FHE-enabled ImpactSBT contract").setAction
   async (_args, hre) => {
     const [deployer] = await hre.ethers.getSigners();
 
-    console.log("Deploying ImpactSBT with account:", deployer.address);
+    console.log("Deploying ImpactSBT with account:", await deployer.getAddress());
 
     const factory = await hre.ethers.getContractFactory("ImpactSBT");
-    const contract = await factory.deploy(deployer.address);
+    const contract = await factory.deploy(await deployer.getAddress());
 
-    await contract.deployed();
+    await contract.waitForDeployment();
 
-    console.log("ImpactSBT deployed to:", contract.address);
+    const address = await contract.getAddress();
+    console.log("ImpactSBT deployed to:", address);
   }
 );
 
